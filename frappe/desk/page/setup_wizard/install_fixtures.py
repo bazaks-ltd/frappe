@@ -20,12 +20,7 @@ def install():
 def update_genders():
 	default_genders = [
 		"Male",
-		"Female",
-		"Other",
-		"Transgender",
-		"Genderqueer",
-		"Non-Conforming",
-		"Prefer not to say",
+		"Female"
 	]
 	records = [{"doctype": "Gender", "gender": d} for d in default_genders]
 	for record in records:
