@@ -41,8 +41,8 @@ class NumberCard(Document):
 		show_percentage_stats: DF.Check
 		stats_time_interval: DF.Literal["Daily", "Weekly", "Monthly", "Yearly"]
 		type: DF.Literal["Document Type", "Report", "Custom"]
-
 	# end: auto-generated types
+
 	def autoname(self):
 		if not self.name:
 			self.name = self.label

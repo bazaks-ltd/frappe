@@ -19,7 +19,7 @@ from frappe.www.login import _generate_temporary_login_link
 def add_user(email, password, username=None, mobile_no=None):
 	first_name = email.split("@", 1)[0]
 	user = frappe.get_doc(
-		dict(doctype="User", email=email, first_name=first_name, username=username, mobile_no=mobile_no)
+		doctype="User", email=email, first_name=first_name, username=username, mobile_no=mobile_no
 	).insert()
 	user.new_password = password
 	user.simultaneous_sessions = 1
@@ -152,18 +152,16 @@ class TestAuth(FrappeTestCase):
 		# Rate limiting
 		for _ in range(6):
 			res = requests.get(_generate_temporary_login_link(user, 10))
-			if res.status_code == 417:
+			if res.status_code == 429:
 				break
 		else:
 			self.fail("Rate limting not working")
 
 	def test_correct_cookie_expiry_set(self):
-		import pytz
-
 		client = FrappeClient(self.HOST_NAME, self.test_user_email, self.test_user_password)
 
 		expiry_time = next(x for x in client.session.cookies if x.name == "sid").expires
-		current_time = datetime.datetime.now(tz=pytz.UTC).timestamp()
+		current_time = datetime.datetime.now(tz=datetime.UTC).timestamp()
 		self.assertAlmostEqual(get_expiry_in_seconds(), expiry_time - current_time, delta=60 * 60)
 
 

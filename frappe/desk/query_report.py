@@ -34,6 +34,9 @@ def get_report_doc(report_name):
 				doc.custom_filters = data.get("filters")
 		doc.is_custom_report = True
 
+		# Follow whatever the custom report has set for prepared report field
+		doc.prepared_report = custom_report_doc.prepared_report
+
 	if not doc.is_permitted():
 		frappe.throw(
 			_("You don't have access to Report: {0}").format(report_name),
@@ -121,7 +124,7 @@ def generate_report_result(
 
 
 def normalize_result(result, columns):
-	# Converts to list of dicts from list of lists/tuples
+	# Convert to list of dicts from list of lists/tuples
 	data = []
 	column_names = [column["fieldname"] for column in columns]
 	if result and isinstance(result[0], list | tuple):
@@ -206,18 +209,22 @@ def run(
 	if sbool(are_default_filters) and report.custom_filters:
 		filters = report.custom_filters
 
-	if report.prepared_report and not sbool(ignore_prepared_report) and not custom_columns:
-		if filters:
-			if isinstance(filters, str):
-				filters = json.loads(filters)
+	try:
+		if report.prepared_report and not sbool(ignore_prepared_report) and not custom_columns:
+			if filters:
+				if isinstance(filters, str):
+					filters = json.loads(filters)
 
-			dn = filters.pop("prepared_report_name", None)
+				dn = filters.pop("prepared_report_name", None)
+			else:
+				dn = ""
+			result = get_prepared_report_result(report, filters, dn, user)
 		else:
-			dn = ""
-		result = get_prepared_report_result(report, filters, dn, user)
-	else:
-		result = generate_report_result(report, filters, user, custom_columns, is_tree, parent_field)
-		add_data_to_monitor(report=report.reference_report or report.name)
+			result = generate_report_result(report, filters, user, custom_columns, is_tree, parent_field)
+			add_data_to_monitor(report=report.reference_report or report.name)
+	except Exception:
+		frappe.log_error("Report Error")
+		raise
 
 	result["add_total_row"] = report.add_total_row and not result.get("skip_total_row", False)
 
@@ -622,11 +629,11 @@ def has_match(
 	columns_dict,
 	user,
 ):
-	"""Returns True if after evaluating permissions for each linked doctype
-	- There is an owner match for the ref_doctype
-	- `and` There is a user permission match for all linked doctypes
+	"""Return True if after evaluating permissions for each linked doctype:
+	        - There is an owner match for the ref_doctype
+	        - `and` There is a user permission match for all linked doctypes
 
-	Returns True if the row is empty
+	Return True if the row is empty.
 
 	Note:
 	Each doctype could have multiple conflicting user permission doctypes.
@@ -724,9 +731,10 @@ def get_linked_doctypes(columns, data):
 
 
 def get_columns_dict(columns):
-	"""Returns a dict with column docfield values as dict
+	"""Return a dict with column docfield values as dict.
+
 	The keys for the dict are both idx and fieldname,
-	so either index or fieldname can be used to search for a column's docfield properties
+	so either index or fieldname can be used to search for a column's docfield properties.
 	"""
 	columns_dict = frappe._dict()
 	for idx, col in enumerate(columns):

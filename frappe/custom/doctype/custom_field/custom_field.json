@@ -15,6 +15,7 @@
   "fieldname",
   "insert_after",
   "length",
+  "link_filters",
   "column_break_6",
   "fieldtype",
   "precision",
@@ -142,6 +143,7 @@
   {
    "fieldname": "options",
    "fieldtype": "Small Text",
+   "ignore_xss_filter": 1,
    "in_list_view": 1,
    "label": "Options",
    "oldfieldname": "options",
@@ -185,6 +187,7 @@
   {
    "fieldname": "default",
    "fieldtype": "Text",
+   "ignore_xss_filter": 1,
    "label": "Default Value",
    "oldfieldname": "default",
    "oldfieldtype": "Text"
@@ -447,6 +450,12 @@
    "label": "Sort Options"
   },
   {
+   "fieldname": "link_filters",
+   "fieldtype": "JSON",
+   "hidden": 1,
+   "label": "Link Filters"
+  },
+  {
    "default": "0",
    "fieldname": "show_dashboard",
    "fieldtype": "Check",
@@ -457,7 +466,7 @@
  "idx": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-07 17:34:47.167183",
+ "modified": "2024-04-12 16:25:50.349736",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Custom Field",
@@ -487,7 +496,7 @@
   }
  ],
  "search_fields": "dt,label,fieldtype,options",
- "sort_field": "modified",
+ "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
  "track_changes": 1

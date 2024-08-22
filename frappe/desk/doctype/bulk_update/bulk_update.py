@@ -24,7 +24,6 @@ class BulkUpdate(Document):
 		field: DF.Literal[None]
 		limit: DF.Int
 		update_value: DF.SmallText
-
 	# end: auto-generated types
 
 	@frappe.whitelist()

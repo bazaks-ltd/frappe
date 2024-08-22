@@ -22,6 +22,7 @@ class EnergyPointSettings(Document):
 		point_allocation_periodicity: DF.Literal["Daily", "Weekly", "Monthly"]
 		review_levels: DF.Table[ReviewLevel]
 	# end: auto-generated types
+
 	pass
 
 

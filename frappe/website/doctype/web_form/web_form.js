@@ -24,6 +24,16 @@ frappe.ui.form.on("Web Form", {
 	},
 
 	refresh: function (frm) {
+		// get iframe url for web form
+		frm.sidebar
+			.add_user_action(__("Copy Embed Code"))
+			.attr("href", "#")
+			.on("click", () => {
+				const url = frappe.urllib.get_full_url(frm.doc.route);
+				const code = `<iframe src="${url}" style="border: none; width: 100%; height: inherit;"></iframe>`;
+				frappe.utils.copy_to_clipboard(code, __("Embed code copied"));
+			});
+
 		if (frm.doc.is_standard && !frappe.boot.developer_mode) {
 			frm.disable_form();
 			frappe.show_alert(
@@ -60,7 +70,7 @@ frappe.ui.form.on("Web Form", {
 
 		if (!frm.doc.web_form_fields) {
 			frm.scroll_to_field("web_form_fields");
-			frappe.throw(__("Atleast one field is required in Web Form Fields Table"));
+			frappe.throw(__("At least one field is required in Web Form Fields Table"));
 		}
 
 		let page_break_count = frm.doc.web_form_fields.filter(

@@ -28,7 +28,7 @@ class FrappeTestCase(unittest.TestCase):
 	TEST_SITE = "test_site"
 
 	SHOW_TRANSACTION_COMMIT_WARNINGS = False
-	maxDiff = None  # prints long diffs but useful in CI
+	maxDiff = 10_000  # prints long diffs but useful in CI
 
 	@classmethod
 	def setUpClass(cls) -> None:
@@ -134,16 +134,38 @@ class FrappeTestCase(unittest.TestCase):
 
 		def _sql_with_count(*args, **kwargs):
 			ret = orig_sql(*args, **kwargs)
-			queries.append(frappe.db.last_query)
+			queries.append(args[0].last_query)
 			return ret
 
 		try:
-			orig_sql = frappe.db.sql
-			frappe.db.sql = _sql_with_count
+			orig_sql = frappe.db.__class__.sql
+			frappe.db.__class__.sql = _sql_with_count
 			yield
-			self.assertLessEqual(len(queries), count, msg="Queries executed: " + "\n\n".join(queries))
+			self.assertLessEqual(len(queries), count, msg="Queries executed: \n" + "\n\n".join(queries))
 		finally:
-			frappe.db.sql = orig_sql
+			frappe.db.__class__.sql = orig_sql
+
+	@contextmanager
+	def assertRedisCallCounts(self, count):
+		commands = []
+
+		def execute_command_and_count(*args, **kwargs):
+			ret = orig_execute(*args, **kwargs)
+			key_len = 2
+			if "H" in args[0]:
+				key_len = 3
+			commands.append((args)[:key_len])
+			return ret
+
+		try:
+			orig_execute = frappe.cache.execute_command
+			frappe.cache.execute_command = execute_command_and_count
+			yield
+			self.assertLessEqual(
+				len(commands), count, msg="commands executed: \n" + "\n".join(str(c) for c in commands)
+			)
+		finally:
+			frappe.cache.execute_command = orig_execute
 
 	@contextmanager
 	def assertRowsRead(self, count):
@@ -204,14 +226,15 @@ class FrappeTestCase(unittest.TestCase):
 			frappe.connect()
 
 	@contextmanager
-	def freeze_time(self, time_to_freeze, *args, **kwargs):
+	def freeze_time(self, time_to_freeze, is_utc=False, *args, **kwargs):
 		from freezegun import freeze_time
 
-		# Freeze time expects UTC or tzaware objects. We have neither, so convert to UTC.
-		timezone = pytz.timezone(get_system_timezone())
-		fake_time_with_tz = timezone.localize(get_datetime(time_to_freeze)).astimezone(pytz.utc)
+		if not is_utc:
+			# Freeze time expects UTC or tzaware objects. We have neither, so convert to UTC.
+			timezone = pytz.timezone(get_system_timezone())
+			time_to_freeze = timezone.localize(get_datetime(time_to_freeze)).astimezone(pytz.utc)
 
-		with freeze_time(fake_time_with_tz, *args, **kwargs):
+		with freeze_time(time_to_freeze, *args, **kwargs):
 			yield
 
 
@@ -257,7 +280,7 @@ def _restore_thread_locals(flags):
 @contextmanager
 def change_settings(doctype, settings_dict=None, /, commit=False, **settings):
 	"""A context manager to ensure that settings are changed before running
-	function and restored after running it regardless of exceptions occured.
+	function and restored after running it regardless of exceptions occurred.
 	This is useful in tests where you want to make changes in a function but
 	don't retain those changes.
 	import and use as decorator to cover full function or using `with` statement.

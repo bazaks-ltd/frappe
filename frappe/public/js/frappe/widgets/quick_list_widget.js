@@ -19,7 +19,9 @@ export default class QuickListWidget extends Widget {
 	set_actions() {
 		if (this.in_customize_mode) return;
 
-		this.setup_add_new_button();
+		if (frappe.model.can_create(this.document_type)) {
+			this.setup_add_new_button();
+		}
 		this.setup_refresh_list_button();
 		this.setup_filter_list_button();
 	}
@@ -27,7 +29,7 @@ export default class QuickListWidget extends Widget {
 	setup_add_new_button() {
 		this.add_new_button = $(
 			`<div class="add-new btn btn-xs pull-right"
-			title="${__("Add New")}  ${__(this.document_type)}
+			title="${__("Add New")} ${__(this.document_type)}
 			">
 				${frappe.utils.icon("add", "sm")}
 			</div>`
@@ -211,7 +213,7 @@ export default class QuickListWidget extends Widget {
 					doctype: this.document_type,
 					fields: fields,
 					filters: quick_list_filter,
-					order_by: "modified desc",
+					order_by: "creation desc",
 					start: 0,
 					page_length: 4,
 				},

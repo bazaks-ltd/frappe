@@ -61,8 +61,7 @@
 .list-row-container {
 	display: flex;
 	flex-direction: column;
-	outline: none;
-	padding: 0 var(--padding-xs);
+	border-bottom: 1px solid $border-color;
 
 	&:focus {
 		.list-row {
@@ -70,24 +69,18 @@
 		}
 	}
 
-	.list-row-border {
-		border-bottom: 1px solid $border-color;
-		margin: 0 10px;
-	}
-
-	&:last-child .list-row-border {
-		display: none;
+	&:last-child {
+		border-bottom: none;
 	}
 }
 
 .list-row {
-	padding: 15px 15px 15px 0px;
-	height: 40px;
+	padding-right: 15px;
+	height: var(--list-row-height);
 	cursor: pointer;
 	transition: color 0.2s;
 	-webkit-transition: color 0.2s;
 	@include get_textstyle("base", "regular");
-	border-radius: var(--border-radius-md);
 
 	&:hover:not(.list-row-head) {
 		background-color: var(--highlight-color);
@@ -160,23 +153,19 @@
 	.file-select {
 		padding-left: 11px;
 	}
+}
 
-	.select-like {
-		padding: 10px 0 10px 11px;
-	}
+.select-like {
+	padding: var(--list-checkbox-padding);
+	cursor: default;
 }
 
 .list-row-head {
 	@extend .list-row;
 	cursor: default;
 	background-color: var(--subtle-fg);
-	height: 30px;
-	margin: 0.5rem var(--padding-xs);
-	border-radius: var(--border-radius-md);
+	height: 36px;
 
-	.list-check-all {
-		margin-left: 11px;
-	}
 	.list-subject {
 		font-weight: normal;
 	}
@@ -247,24 +236,26 @@ $level-margin-right: 8px;
 	height: 10px;
 }
 
-.likes-count {
-	display: none;
-}
-
 .list-liked-by-me {
 	margin-bottom: 1px;
 }
 
-input.list-check-all,
-input.list-row-checkbox {
-	margin-top: 0px;
-	margin-bottom: 0px;
-	--checkbox-right-margin: calc(var(--checkbox-size) / 2 + #{$level-margin-right});
+input.list-row-checkbox,
+input.list-header-checkbox {
+	margin-top: 0;
+	margin-bottom: 0;
+	--checkbox-right-margin: 0;
 	background-color: var(--card-bg);
-}
+	z-index: 1;
 
-input.list-check-all {
-	margin-left: 15px;
+	&::after {
+		// Extend the checkbox's clickable area
+		display: block;
+		content: "";
+		inset: calc(-1 * var(--list-checkbox-padding));
+		position: absolute;
+		opacity: 0;
+	}
 }
 
 .render-list-checkbox {
@@ -310,7 +301,7 @@ input.list-check-all {
 	align-items: center;
 	cursor: pointer;
 
-	height: 40px;
+	height: var(--list-row-height);
 	padding-left: 15px;
 
 	@include get_textstyle("base", "regular");
@@ -329,7 +320,7 @@ input.list-check-all {
 
 	&--head {
 		background-color: var(--highlight-color);
-		border-bottom: 1px solid $border-color;
+		// border-bottom: 1px solid $border-color;
 		cursor: auto;
 	}
 

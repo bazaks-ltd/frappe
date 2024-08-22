@@ -3,7 +3,6 @@
 
 import base64
 import hashlib
-import io
 import json
 import mimetypes
 import os
@@ -72,7 +71,7 @@ def upload():
 
 
 def get_file_doc(dt=None, dn=None, folder=None, is_private=None, df=None):
-	"""returns File object (Document) from given parameters or form_dict"""
+	"""Return File object (Document) from given parameters or `form_dict`."""
 	r = frappe.form_dict
 
 	if dt is None:
@@ -279,9 +278,7 @@ def remove_file(
 	ignore_permissions, comment = False, None
 	if attached_to_doctype and attached_to_name and not from_delete:
 		doc = frappe.get_doc(attached_to_doctype, attached_to_name)
-		ignore_permissions = doc.has_permission("write") or False
-		if frappe.flags.in_web_form:
-			ignore_permissions = True
+		ignore_permissions = frappe.flags.in_web_form or doc.has_permission("write")
 		if not file_name:
 			file_name = frappe.db.get_value("File", fid, "file_name")
 		comment = doc.add_comment("Attachment Removed", file_name)
@@ -327,7 +324,7 @@ def delete_file(path):
 
 
 def get_file(fname):
-	"""Returns [`file_name`, `content`] for given file name `fname`"""
+	"""Return [`file_name`, `content`] for given file name `fname`."""
 	file_path = get_file_path(fname)
 
 	# read the file
@@ -344,7 +341,7 @@ def get_file(fname):
 
 
 def get_file_path(file_name):
-	"""Returns file path from given file name"""
+	"""Return file path from given file name."""
 	if "../" in file_name:
 		return
 
@@ -396,27 +393,6 @@ def get_file_name(fname, optional_suffix):
 			partial, extn = f[0], "." + f[1]
 		return f"{partial}{optional_suffix}{extn}"
 	return fname
-
-
-@frappe.whitelist()
-def download_file(file_url):
-	"""
-	Download file using token and REST API. Valid session or
-	token is required to download private files.
-
-	Method : GET
-	Endpoint : frappe.utils.file_manager.download_file
-	URL Params : file_name = /path/to/file relative to site path
-	"""
-	file_doc = frappe.get_doc("File", {"file_url": file_url})
-	file_doc.check_permission("read")
-	path = os.path.join(get_files_path(), os.path.basename(file_url))
-
-	with open(path, "rb") as fileobj:
-		filedata = fileobj.read()
-	frappe.local.response.filename = os.path.basename(file_url)
-	frappe.local.response.filecontent = filedata
-	frappe.local.response.type = "download"
 
 
 @frappe.whitelist()

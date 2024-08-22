@@ -53,8 +53,8 @@ class BlogPost(WebsiteGenerator):
 		read_time: DF.Int
 		route: DF.Data | None
 		title: DF.Data
-
 	# end: auto-generated types
+
 	@frappe.whitelist()
 	def make_route(self):
 		if not self.route:
@@ -212,14 +212,14 @@ class BlogPost(WebsiteGenerator):
 			"reference_name": self.name,
 		}
 
-		context.like_count = frappe.db.count("Comment", filters) or 0
+		context.like_count = frappe.db.count("Comment", filters)
 
 		filters["comment_email"] = user
 
 		if user == "Guest":
 			filters["ip_address"] = frappe.local.request_ip
 
-		context.like = frappe.db.count("Comment", filters) or 0
+		context.like = frappe.db.count("Comment", filters)
 
 	def set_read_time(self):
 		content = self.content or self.content_html or ""

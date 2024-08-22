@@ -22,14 +22,13 @@ def resize_images(path, maxdim=700):
 					print(f"resized {os.path.join(basepath, fname)}")
 
 
-def strip_exif_data(content, content_type):
-	"""Strips EXIF from image files which support it.
+def strip_exif_data(content, content_type) -> bytes:
+	"""Strip EXIF from image files which support it.
 
 	Works by creating a new Image object which ignores exif by
 	default and then extracts the binary data back into content.
 
-	Returns:
-	        Bytes: Stripped image content
+	Return Stripped image content.
 	"""
 
 	original_image = Image.open(io.BytesIO(content))
@@ -53,6 +52,7 @@ def optimize_image(content, content_type, max_width=1024, max_height=768, optimi
 
 	try:
 		image = Image.open(io.BytesIO(content))
+		exif = image.getexif()
 		width, height = image.size
 		max_height = max(min(max_height, height * 0.8), 200)
 		max_width = max(min(max_width, width * 0.8), 200)
@@ -67,6 +67,7 @@ def optimize_image(content, content_type, max_width=1024, max_height=768, optimi
 			optimize=optimize,
 			quality=quality,
 			save_all=True if image_format == "gif" else None,
+			exif=exif,
 		)
 		optimized_content = output.getvalue()
 		return optimized_content if len(optimized_content) < len(content) else content

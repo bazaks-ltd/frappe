@@ -260,7 +260,7 @@ def get_heatmap_chart_config(chart, filters, heatmap_year):
 	}
 
 
-def get_group_by_chart_config(chart, filters):
+def get_group_by_chart_config(chart, filters) -> dict | None:
 	aggregate_function = get_aggregate_function(chart.group_by_type)
 	value_field = chart.aggregate_function_based_on or "1"
 	group_by_field = chart.group_by_based_on
@@ -279,13 +279,22 @@ def get_group_by_chart_config(chart, filters):
 		ignore_ifnull=True,
 	)
 
+	group_by_field_field = frappe.get_meta(doctype).get_field(
+		group_by_field
+	)  # get info about @group_by_field
+
+	if data and group_by_field_field.fieldtype == "Link":  # if @group_by_field is link
+		title_field = frappe.get_meta(group_by_field_field.options)  # get title field
+		if title_field.title_field:  # if has title_field
+			for item in data:  # replace chart labels from name to title value
+				item.name = frappe.get_value(group_by_field_field.options, item.name, title_field.title_field)
+
 	if data:
 		return {
-			"labels": [item["name"] if item["name"] else "Not Specified" for item in data],
+			"labels": [item.get("name", "Not Specified") for item in data],
 			"datasets": [{"name": chart.name, "values": [item["count"] for item in data]}],
 		}
-	else:
-		return None
+	return None
 
 
 def get_aggregate_function(chart_type):
@@ -304,10 +313,10 @@ def get_result(data, timegrain, from_date, to_date, chart_type):
 		for d in result:
 			count = 0
 			while data_index < len(data) and getdate(data[data_index][0]) <= d[0]:
-				d[1] += data[data_index][1]
-				count += data[data_index][2]
+				d[1] += cint(data[data_index][1])
+				count += cint(data[data_index][2])
 				data_index += 1
-			if chart_type == "Average" and not count == 0:
+			if chart_type == "Average" and count != 0:
 				d[1] = d[1] / count
 			if chart_type == "Count":
 				d[1] = count
@@ -366,8 +375,8 @@ class DashboardChart(Document):
 		value_based_on: DF.Literal[None]
 		x_field: DF.Literal[None]
 		y_axis: DF.Table[DashboardChartField]
-
 	# end: auto-generated types
+
 	def on_update(self):
 		frappe.cache.delete_key(f"chart-data:{self.name}")
 		if frappe.conf.developer_mode and self.is_standard:

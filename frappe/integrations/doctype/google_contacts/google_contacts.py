@@ -29,8 +29,8 @@ class GoogleContacts(Document):
 		pull_from_google_contacts: DF.Check
 		push_to_google_contacts: DF.Check
 		refresh_token: DF.Password | None
-
 	# end: auto-generated types
+
 	def validate(self):
 		if not frappe.db.get_single_value("Google Settings", "enable"):
 			frappe.throw(_("Enable Google API in Google Settings."))
@@ -57,7 +57,7 @@ def authorize_access(g_contact, reauthorize=False, code=None):
 	contact = frappe.get_doc("Google Contacts", g_contact)
 	contact.check_permission("write")
 
-	oauth_code = code or contact.get_password("authorization_code")
+	oauth_code = code or contact.get_password("authorization_code", raise_exception=False)
 	oauth_obj = GoogleOAuth("contacts")
 
 	if not oauth_code or reauthorize:
@@ -75,9 +75,7 @@ def authorize_access(g_contact, reauthorize=False, code=None):
 
 
 def get_google_contacts_object(g_contact):
-	"""
-	Returns an object of Google Calendar along with Google Calendar doc.
-	"""
+	"""Return an object of Google Calendar along with Google Calendar doc."""
 	account = frappe.get_doc("Google Contacts", g_contact)
 	oauth_obj = GoogleOAuth("contacts")
 

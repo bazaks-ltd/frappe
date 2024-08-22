@@ -4,9 +4,10 @@
 import json
 
 import frappe
+from frappe import _
 from frappe.geo.country_info import get_country_info
 from frappe.permissions import AUTOMATIC_ROLES
-from frappe.translate import get_messages_for_boot, send_translations, set_default_language
+from frappe.translate import send_translations, set_default_language
 from frappe.utils import cint, now, strip
 from frappe.utils.password import update_password
 
@@ -18,8 +19,8 @@ def get_setup_stages(args):  # nosemgrep
 	# That is done by frappe after successful completion of all stages
 	stages = [
 		{
-			"status": "Updating global settings",
-			"fail_msg": "Failed to update global settings",
+			"status": _("Updating global settings"),
+			"fail_msg": _("Failed to update global settings"),
 			"tasks": [
 				{"fn": update_global_settings, "args": args, "fail_msg": "Failed to update global settings"}
 			],
@@ -31,8 +32,8 @@ def get_setup_stages(args):  # nosemgrep
 	stages.append(
 		{
 			# post executing hooks
-			"status": "Wrapping up",
-			"fail_msg": "Failed to complete setup",
+			"status": _("Wrapping up"),
+			"fail_msg": _("Failed to complete setup"),
 			"tasks": [{"fn": run_post_setup_complete, "args": args, "fail_msg": "Failed to complete setup"}],
 		}
 	)
@@ -186,7 +187,7 @@ def update_system_settings(args):  # nosemgrep
 		}
 	)
 	system_settings.save()
-	if args.get("allow_recording_first_session"):
+	if args.get("enable_telemetry"):
 		frappe.db.set_default("session_recording_start", now())
 
 
@@ -219,6 +220,7 @@ def create_or_update_user(args):  # nosemgrep
 			}
 		)
 		user.append_roles(*_get_default_roles())
+		user.append_roles("System Manager")
 		user.flags.no_welcome_mail = True
 		user.insert()
 
@@ -279,6 +281,8 @@ def disable_future_access():
 def load_messages(language):
 	"""Load translation messages for given language from all `setup_wizard_requires`
 	javascript files"""
+	from frappe.translate import get_messages_for_boot
+
 	frappe.clear_cache()
 	set_default_language(get_language_code(language))
 	frappe.db.commit()
@@ -302,7 +306,7 @@ def load_languages():
 	}
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def load_country():
 	from frappe.sessions import get_geo_ip_country
 

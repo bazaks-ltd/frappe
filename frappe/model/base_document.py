@@ -32,6 +32,7 @@ from frappe.utils import (
 	sanitize_html,
 	strip_html,
 )
+from frappe.utils.defaults import get_not_null_defaults
 from frappe.utils.html_utils import unescape_html
 
 if TYPE_CHECKING:
@@ -55,9 +56,9 @@ DOCTYPES_FOR_DOCTYPE = {"DocType", *TABLE_DOCTYPES_FOR_DOCTYPE.values()}
 
 
 def get_controller(doctype):
-	"""
-	Returns the locally cached **class** object of the given DocType.
-	For `custom` type, returns `frappe.model.document.Document`.
+	"""Return the locally cached **class** object of the given DocType.
+
+	For `custom` type, return `frappe.model.document.Document`.
 
 	:param doctype: DocType name as string.
 	"""
@@ -86,16 +87,24 @@ def import_controller(doctype):
 
 	module_path = None
 	class_overrides = frappe.get_hooks("override_doctype_class")
+
+	module = load_doctype_module(doctype, module_name)
+	classname = doctype.replace(" ", "").replace("-", "")
+	class_ = getattr(module, classname, None)
+
 	if class_overrides and class_overrides.get(doctype):
 		import_path = class_overrides[doctype][-1]
-		module_path, classname = import_path.rsplit(".", 1)
-		module = frappe.get_module(module_path)
+		module_path, custom_classname = import_path.rsplit(".", 1)
+		custom_module = frappe.get_module(module_path)
+		custom_class_ = getattr(custom_module, custom_classname, None)
+		if not issubclass(custom_class_, class_):
+			original_class_path = frappe.bold(f"{class_.__module__}.{class_.__name__}")
+			frappe.throw(
+				f"{doctype}: {frappe.bold(import_path)} must be a subclass of {original_class_path}",
+				title=_("Invalid Override"),
+			)
+		class_ = custom_class_
 
-	else:
-		module = load_doctype_module(doctype, module_name)
-		classname = doctype.replace(" ", "").replace("-", "")
-
-	class_ = getattr(module, classname, None)
 	if class_ is None:
 		raise ImportError(
 			doctype
@@ -146,9 +155,9 @@ class BaseDocument:
 		return get_permitted_fields(doctype=self.doctype, parenttype=getattr(self, "parenttype", None))
 
 	def __getstate__(self):
-		"""
+		"""Return a copy of `__dict__` excluding unpicklable values like `meta`.
+
 		Called when pickling.
-		Returns a copy of `__dict__` excluding unpicklable values like `meta`.
 		More info: https://docs.python.org/3/library/pickle.html#handling-stateful-objects
 		"""
 
@@ -243,7 +252,7 @@ class BaseDocument:
 		if key in self.__dict__:
 			del self.__dict__[key]
 
-	def append(self, key: str, value: D | dict | None = None) -> D:
+	def append(self, key: str, value: D | dict | None = None, position: int = -1) -> D:
 		"""Append an item to a child table.
 
 		Example:
@@ -259,13 +268,22 @@ class BaseDocument:
 		if (table := self.__dict__.get(key)) is None:
 			self.__dict__[key] = table = []
 
-		ret_value = self._init_child(value, key)
-		table.append(ret_value)
+		d = self._init_child(value, key)
+
+		if position == -1:
+			table.append(d)
+		else:
+			# insert at specific position
+			table.insert(position, d)
+
+			# re number idx
+			for i, _d in enumerate(table):
+				_d.idx = i + 1
 
 		# reference parent document but with weak reference, parent_doc will be deleted if self is garbage collected.
-		ret_value.parent_doc = weakref.ref(self)
+		d.parent_doc = weakref.ref(self)
 
-		return ret_value
+		return d
 
 	@property
 	def parent_doc(self):
@@ -401,6 +419,13 @@ class BaseDocument:
 
 			if ignore_nulls and not is_virtual_field and value is None:
 				continue
+
+			# If the docfield is not nullable - set a default non-null value
+			if value is None and getattr(df, "not_nullable", False):
+				if df.default:
+					value = df.default
+				else:
+					value = get_not_null_defaults(df.fieldtype)
 
 			d[fieldname] = value
 
@@ -561,8 +586,8 @@ class BaseDocument:
 			if frappe.db.is_primary_key_violation(e):
 				if self.meta.autoname == "hash":
 					# hash collision? try again
-					frappe.flags.retry_count = (frappe.flags.retry_count or 0) + 1
-					if frappe.flags.retry_count > 5 and not frappe.flags.in_test:
+					self.flags.retry_count = (self.flags.retry_count or 0) + 1
+					if self.flags.retry_count > 5:
 						raise
 					self.name = None
 					self.db_insert()
@@ -644,7 +669,7 @@ class BaseDocument:
 
 	def get_field_name_by_key_name(self, key_name):
 		"""MariaDB stores a mapping between `key_name` and `column_name`.
-		This function returns the `column_name` associated with the `key_name` passed
+		Return the `column_name` associated with the `key_name` passed.
 
 		Args:
 		        key_name (str): The name of the database index.
@@ -652,7 +677,7 @@ class BaseDocument:
 		Raises:
 		        IndexError: If the key is not found in the table.
 
-		Returns:
+		Return:
 		        str: The column name associated with the key.
 		"""
 		return frappe.db.sql(
@@ -671,17 +696,17 @@ class BaseDocument:
 		)[0].get("Column_name")
 
 	def get_label_from_fieldname(self, fieldname):
-		"""Returns the associated label for fieldname
+		"""Return the associated label for fieldname.
 
 		Args:
 		        fieldname (str): The fieldname in the DocType to use to pull the label.
 
-		Returns:
+		Return:
 		        str: The label associated with the fieldname, if found, otherwise `None`.
 		"""
 		df = self.meta.get_field(fieldname)
 		if df:
-			return df.label
+			return _(df.label) if df.label else None
 
 	def update_modified(self):
 		"""Update modified timestamp"""
@@ -756,7 +781,7 @@ class BaseDocument:
 		return missing
 
 	def get_invalid_links(self, is_submittable=False):
-		"""Returns list of invalid links and also updates fetch values if not set"""
+		"""Return list of invalid links and also update fetch values if not set."""
 
 		def get_msg(df, docname):
 			# check if parentfield exists (only applicable for child table doctype)
@@ -787,13 +812,14 @@ class BaseDocument:
 				# that are mapped as link_fieldname.source_fieldname in Options of
 				# Readonly or Data or Text type fields
 
+				meta = frappe.get_meta(doctype)
 				fields_to_fetch = [
 					_df
 					for _df in self.meta.get_fields_to_fetch(df.fieldname)
 					if not _df.get("fetch_if_empty")
 					or (_df.get("fetch_if_empty") and not self.get(_df.fieldname))
 				]
-				if not frappe.get_meta(doctype).get("is_virtual"):
+				if not meta.get("is_virtual"):
 					if not fields_to_fetch:
 						# cache a single value type
 						values = _dict(name=frappe.db.get_value(doctype, docname, "name", cache=True))
@@ -802,23 +828,31 @@ class BaseDocument:
 							_df.fetch_from.split(".")[-1] for _df in fields_to_fetch
 						]
 
+						# fallback to dict with field_to_fetch=None if link field value is not found
+						# (for compatibility, `values` must have same data type)
+						empty_values = _dict({value: None for value in values_to_fetch})
 						# don't cache if fetching other values too
-						values = frappe.db.get_value(doctype, docname, values_to_fetch, as_dict=True)
+						values = (
+							frappe.db.get_value(doctype, docname, values_to_fetch, as_dict=True)
+							or empty_values
+						)
 
-				if getattr(frappe.get_meta(doctype), "issingle", 0):
+				if getattr(meta, "issingle", 0):
 					values.name = doctype
 
-				if frappe.get_meta(doctype).get("is_virtual"):
+				if meta.get("is_virtual"):
 					values = frappe.get_doc(doctype, docname).as_dict()
 
 				if values:
-					setattr(self, df.fieldname, values.name)
+					if not df.get("is_virtual"):
+						setattr(self, df.fieldname, values.name)
 
 					for _df in fields_to_fetch:
 						if self.is_new() or not self.docstatus.is_submitted() or _df.allow_on_submit:
 							self.set_fetch_from_value(doctype, _df, values)
 
-					notify_link_count(doctype, docname)
+					if not meta.istable:
+						notify_link_count(doctype, docname)
 
 					if not values.name:
 						invalid_links.append((df.fieldname, docname, get_msg(df, docname)))
@@ -861,7 +895,7 @@ class BaseDocument:
 			return
 
 		for df in self.meta.get_select_fields():
-			if df.fieldname == "naming_series" or not (self.get(df.fieldname) and df.options):
+			if df.fieldname == "naming_series" or not self.get(df.fieldname) or not df.options:
 				continue
 
 			options = (df.options or "").split("\n")
@@ -969,6 +1003,9 @@ class BaseDocument:
 					self.throw_length_exceeded_error(df, max_length, value)
 
 			elif column_type in ("int", "bigint", "smallint"):
+				if cint(df.get("length")) > 11:  # We implicitl switch to bigint for >11
+					column_type = "bigint"
+
 				max_length = max_positive_value[column_type]
 
 				if abs(cint(value)) > max_length:
@@ -1002,7 +1039,7 @@ class BaseDocument:
 
 		frappe.throw(
 			_("{0}: '{1}' ({3}) will get truncated, as max characters allowed is {2}").format(
-				reference, _(df.label, context=df.parent), max_length, value
+				reference, frappe.bold(_(df.label, context=df.parent)), max_length, value
 			),
 			frappe.CharacterLengthExceededError,
 			title=_("Value too big"),
@@ -1121,7 +1158,7 @@ class BaseDocument:
 		return "".join(set(pwd)) == "*"
 
 	def precision(self, fieldname, parentfield=None) -> int | None:
-		"""Returns float precision for a particular field (or get global default).
+		"""Return float precision for a particular field (or get global default).
 
 		:param fieldname: Fieldname for which precision is required.
 		:param parentfield: If fieldname is in child table."""
@@ -1183,7 +1220,7 @@ class BaseDocument:
 		return format_value(val, df=df, doc=doc, currency=currency, format=format)
 
 	def is_print_hide(self, fieldname, df=None, for_print=True):
-		"""Returns true if fieldname is to be hidden for print.
+		"""Return True if fieldname is to be hidden for print.
 
 		Print Hide can be set via the Print Format Builder or in the controller as a list
 		of hidden fields. Example
@@ -1212,7 +1249,8 @@ class BaseDocument:
 		return print_hide
 
 	def in_format_data(self, fieldname):
-		"""Returns True if shown via Print Format::`format_data` property.
+		"""Return True if shown via Print Format::`format_data` property.
+
 		Called from within standard print format."""
 		doc = getattr(self, "parent_doc", self)
 

@@ -31,7 +31,7 @@ class CustomDocPerm(Document):
 		share: DF.Check
 		submit: DF.Check
 		write: DF.Check
-
 	# end: auto-generated types
+
 	def on_update(self):
 		frappe.clear_cache(doctype=self.parent)

@@ -90,16 +90,15 @@ export default class GridRow {
 		this.wrapper
 			.find(".grid-row-check")
 			.prop("checked", this.doc ? !!this.doc.__checked : false);
-		this.grid.refresh_remove_rows_button();
+		this.grid.debounced_refresh_remove_rows_button();
 	}
 	remove() {
 		var me = this;
 		if (this.grid.is_editable()) {
+			if (this.get_open_form()) {
+				this.hide_form();
+			}
 			if (this.frm) {
-				if (this.get_open_form()) {
-					this.hide_form();
-				}
-
 				frappe
 					.run_serially([
 						() => {
@@ -176,6 +175,7 @@ export default class GridRow {
 				// renumber and refresh
 				let data = me.grid.get_data();
 				data.move(me.doc.idx - 1, values.move_to - 1);
+				me.frm.dirty();
 
 				// renum idx
 				for (let i = 0; i < data.length; i++) {
@@ -504,7 +504,7 @@ export default class GridRow {
 			);
 			if (selectedColumn && !selectedColumn.hidden && show_field(selectedColumn.fieldtype)) {
 				fields.push({
-					label: selectedColumn.label,
+					label: __(selectedColumn.label, null, this.grid.doctype),
 					value: selectedColumn.fieldname,
 					checked: true,
 				});
@@ -519,7 +519,7 @@ export default class GridRow {
 				show_field(column.fieldtype)
 			) {
 				fields.push({
-					label: column.label,
+					label: __(column.label, null, this.grid.doctype),
 					value: column.fieldname,
 					checked: false,
 				});
@@ -839,10 +839,12 @@ export default class GridRow {
 					delete this.grid.filter[df.fieldname];
 				}
 
-				this.grid.grid_sortable.option(
-					"disabled",
-					Object.keys(this.grid.filter).length !== 0
-				);
+				if (this.grid.grid_sortable) {
+					this.grid.grid_sortable.option(
+						"disabled",
+						Object.keys(this.grid.filter).length !== 0
+					);
+				}
 
 				this.grid.prevent_build = true;
 				this.grid.grid_pagination.go_to_page(1);
@@ -1100,12 +1102,6 @@ export default class GridRow {
 			parent = column.field_area,
 			df = column.df;
 
-		// no text editor in grid
-		if (df.fieldtype == "Text Editor") {
-			df = Object.assign({}, df);
-			df.fieldtype = "Text";
-		}
-
 		var field = frappe.ui.form.make_control({
 			df: df,
 			parent: parent,
@@ -1156,8 +1152,8 @@ export default class GridRow {
 		let ignore_fieldtypes = ["Text", "Small Text", "Code", "Text Editor", "HTML Editor"];
 		if (field.$input) {
 			field.$input.on("keydown", function (e) {
-				var { TAB, UP: UP_ARROW, DOWN: DOWN_ARROW } = frappe.ui.keyCode;
-				if (![TAB, UP_ARROW, DOWN_ARROW].includes(e.which)) {
+				var { ESCAPE, TAB, UP: UP_ARROW, DOWN: DOWN_ARROW } = frappe.ui.keyCode;
+				if (![TAB, UP_ARROW, DOWN_ARROW, ESCAPE].includes(e.which)) {
 					return;
 				}
 
@@ -1191,6 +1187,14 @@ export default class GridRow {
 					}
 					return true;
 				};
+
+				// ESC
+				if (e.which === ESCAPE && !e.shiftKey) {
+					if (me.doc.__unedited) {
+						me.grid.grid_rows[me.doc.idx - 1].remove();
+					}
+					return false;
+				}
 
 				// TAB
 				if (e.which === TAB && !e.shiftKey) {
@@ -1370,16 +1374,20 @@ export default class GridRow {
 		if (cur_frm) cur_frm.cur_grid = null;
 		this.wrapper.removeClass("grid-row-open");
 	}
+	has_prev() {
+		return this.doc.idx > 1;
+	}
 	open_prev() {
 		if (!this.doc) return;
 		this.open_row_at_index(this.doc.idx - 2);
 	}
+	has_next() {
+		return this.doc.idx < this.grid.data.length;
+	}
 	open_next() {
 		if (!this.doc) return;
 
-		if (!this.open_row_at_index(this.doc.idx)) {
-			this.grid.add_new_row(null, null, true);
-		}
+		this.open_row_at_index(this.doc.idx);
 	}
 	open_row_at_index(row_index) {
 		if (!this.grid.data[row_index]) return;
@@ -1435,7 +1443,9 @@ export default class GridRow {
 		let field = this.on_grid_fields_dict[fieldname];
 		// reset field value
 		if (field) {
-			field.docname = this.doc.name;
+			// the below if statement is added to factor in the exception when this.doc is undefined -
+			// - after row removals via customize_form.js on links, actions and states child-tables
+			if (this.doc) field.docname = this.doc.name;
 			field.refresh();
 		}
 

@@ -15,7 +15,7 @@ from frappe.core.doctype.server_script.server_script_utils import get_server_scr
 from frappe.monitor import add_data_to_monitor
 from frappe.utils import cint
 from frappe.utils.csvutils import build_csv_response
-from frappe.utils.deprecations import deprecation_warning
+from frappe.utils.deprecations import deprecated, deprecation_warning
 from frappe.utils.image import optimize_image
 from frappe.utils.response import build_response
 
@@ -124,45 +124,6 @@ def web_logout():
 	)
 
 
-@frappe.whitelist()
-def uploadfile():
-	ret = None
-	check_write_permission(frappe.form_dict.doctype, frappe.form_dict.docname)
-
-	try:
-		if frappe.form_dict.get("from_form"):
-			try:
-				ret = frappe.get_doc(
-					{
-						"doctype": "File",
-						"attached_to_name": frappe.form_dict.docname,
-						"attached_to_doctype": frappe.form_dict.doctype,
-						"attached_to_field": frappe.form_dict.docfield,
-						"file_url": frappe.form_dict.file_url,
-						"file_name": frappe.form_dict.filename,
-						"is_private": frappe.utils.cint(frappe.form_dict.is_private),
-						"content": frappe.form_dict.filedata,
-						"decode": True,
-					}
-				)
-				ret.save()
-			except frappe.DuplicateEntryError:
-				# ignore pass
-				ret = None
-				frappe.db.rollback()
-		else:
-			if frappe.form_dict.get("method"):
-				method = frappe.get_attr(frappe.form_dict.method)
-				is_whitelisted(method)
-				ret = method()
-	except Exception:
-		frappe.errprint(frappe.utils.get_traceback())
-		frappe.response["http_status_code"] = 500
-		ret = None
-
-	return ret
-
-
 @frappe.whitelist(allow_guest=True)
 def upload_file():
 	user = None
@@ -249,10 +210,11 @@ def check_write_permission(doctype: str | None = None, name: str | None = None):
 	if doctype and name:
 		try:
 			doc = frappe.get_doc(doctype, name)
-			doc.has_permission("write")
+			doc.check_permission("write")
 		except frappe.DoesNotExistError:
 			# doc has not been inserted yet, name is set to "new-some-doctype"
-			check_doctype = True
+			# If doc inserts fine then only this attachment will be linked see file/utils.py:relink_mismatched_files
+			return
 
 	if check_doctype:
 		frappe.has_permission(doctype, "write", throw=True)
@@ -345,5 +307,4 @@ def run_doc_method(method, docs=None, dt=None, dn=None, arg=None, args=None):
 	add_data_to_monitor(methodname=method)
 
 
-# for backwards compatibility
-runserverobj = run_doc_method
+runserverobj = deprecated(run_doc_method)

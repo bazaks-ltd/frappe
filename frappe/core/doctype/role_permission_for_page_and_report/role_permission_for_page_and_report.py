@@ -23,8 +23,8 @@ class RolePermissionforPageandReport(Document):
 		report: DF.Link | None
 		roles: DF.Table[HasRole]
 		set_role_for: DF.Literal["", "Page", "Report"]
-
 	# end: auto-generated types
+
 	@frappe.whitelist()
 	def set_report_page_data(self):
 		self.set_custom_roles()

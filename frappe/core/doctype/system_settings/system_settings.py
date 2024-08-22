@@ -36,6 +36,7 @@ class SystemSettings(Document):
 		date_format: DF.Literal[
 			"yyyy-mm-dd", "dd-mm-yyyy", "dd/mm/yyyy", "dd.mm.yyyy", "mm/dd/yyyy", "mm-dd-yyyy"
 		]
+		default_app: DF.Literal[None]
 		deny_multiple_sessions: DF.Check
 		disable_change_log_notification: DF.Check
 		disable_document_sharing: DF.Check
@@ -99,8 +100,8 @@ class SystemSettings(Document):
 	def validate(self):
 		from frappe.twofactor import toggle_two_factor_auth
 
-		enable_password_policy = cint(self.enable_password_policy) and True or False
-		minimum_password_score = cint(getattr(self, "minimum_password_score", 0)) or 0
+		enable_password_policy = cint(self.enable_password_policy)
+		minimum_password_score = cint(getattr(self, "minimum_password_score", 0))
 		if enable_password_policy and minimum_password_score <= 0:
 			frappe.throw(_("Please select Minimum Password Score"))
 		elif not enable_password_policy:

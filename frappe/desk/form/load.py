@@ -3,7 +3,7 @@
 
 import json
 import typing
-from urllib.parse import quote
+from urllib.parse import quote_plus
 
 import frappe
 import frappe.defaults
@@ -38,7 +38,7 @@ def getdoc(doctype, name, user=None):
 
 	if not doc.has_permission("read"):
 		frappe.flags.error_message = _("Insufficient Permission for {0}").format(
-			frappe.bold(doctype + " " + name)
+			frappe.bold(_(doctype) + " " + name)
 		)
 		raise frappe.PermissionError(("read", doctype, name))
 
@@ -272,7 +272,7 @@ def _get_communications(doctype, name, start=0, limit=20):
 def get_communication_data(
 	doctype, name, start=0, limit=20, after=None, fields=None, group_by=None, as_dict=True
 ):
-	"""Returns list of communications for a given document"""
+	"""Return list of communications for a given document."""
 	if not fields:
 		fields = """
 			C.name, C.communication_type, C.communication_medium,
@@ -384,7 +384,7 @@ def get_document_email(doctype, name):
 		return None
 
 	email = email.split("@")
-	return f"{email[0]}+{quote(doctype)}={quote(cstr(name))}@{email[1]}"
+	return f"{email[0]}+{quote_plus(doctype)}={quote_plus(cstr(name))}@{email[1]}"
 
 
 def get_automatic_email_link():
@@ -427,7 +427,7 @@ def get_title_values_for_link_and_dynamic_link_fields(doc, link_fields=None):
 		doctype = field.options if field.fieldtype == "Link" else doc.get(field.options)
 
 		meta = frappe.get_meta(doctype)
-		if not meta or not (meta.title_field and meta.show_title_field_in_link):
+		if not meta or not meta.title_field or not meta.show_title_field_in_link:
 			continue
 
 		link_title = frappe.db.get_value(

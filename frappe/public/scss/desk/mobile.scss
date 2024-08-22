@@ -9,14 +9,6 @@ body {
 // 	overflow-x: hidden;  //Prevent scroll on narrow devices
 // }
 
-@media (max-width: 1024px) {
-	body[data-route^="Form"] {
-		.page-title .title-text {
-			max-width: 35vw;
-		}
-	}
-}
-
 @media (max-width: 991px) {
 	.intro-area,
 	.footnote-area {
@@ -124,7 +116,7 @@ body {
 
 	.sidebar .user-menu {
 		padding: 9px 14px;
-		background-color: var(--navbar-bg);
+		background-color: var(--subtle-accent);
 
 		position: absolute;
 		left: 0;

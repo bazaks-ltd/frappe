@@ -47,7 +47,6 @@ class PrintFormat(Document):
 		raw_printing: DF.Check
 		show_section_headings: DF.Check
 		standard: DF.Literal["No", "Yes"]
-
 	# end: auto-generated types
 
 	def onload(self):
@@ -68,7 +67,9 @@ class PrintFormat(Document):
 		if (
 			self.standard == "Yes"
 			and not frappe.local.conf.get("developer_mode")
-			and not (frappe.flags.in_import or frappe.flags.in_test)
+			and not frappe.flags.in_migrate
+			and not frappe.flags.in_install
+			and not frappe.flags.in_test
 		):
 			frappe.throw(frappe._("Standard Print Format cannot be updated"))
 

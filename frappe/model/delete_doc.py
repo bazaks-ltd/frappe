@@ -127,8 +127,17 @@ def delete_doc(
 
 				# check if links exist
 				if not force:
-					check_if_doc_is_linked(doc)
-					check_if_doc_is_dynamically_linked(doc)
+					try:
+						check_if_doc_is_linked(doc)
+						check_if_doc_is_dynamically_linked(doc)
+					except frappe.LinkExistsError as e:
+						if doc.meta.has_field("enabled") or doc.meta.has_field("disabled"):
+							frappe.throw(
+								_("You can disable this {0} instead of deleting it.").format(_(doctype)),
+								frappe.LinkExistsError,
+							)
+						else:
+							raise e
 
 			update_naming_series(doc)
 			delete_from_table(doctype, name, ignore_doctypes, doc)
@@ -174,13 +183,11 @@ def add_to_deleted_document(doc):
 	"""Add this document to Deleted Document table. Called after delete"""
 	if doc.doctype != "Deleted Document" and frappe.flags.in_install != "frappe":
 		frappe.get_doc(
-			dict(
-				doctype="Deleted Document",
-				deleted_doctype=doc.doctype,
-				deleted_name=doc.name,
-				data=doc.as_json(),
-				owner=frappe.session.user,
-			)
+			doctype="Deleted Document",
+			deleted_doctype=doc.doctype,
+			deleted_name=doc.name,
+			data=doc.as_json(),
+			owner=frappe.session.user,
 		).db_insert()
 
 
@@ -340,7 +347,7 @@ def check_if_doc_is_dynamically_linked(doc, method="Delete"):
 			df["table"] = ", `parent`, `parenttype`, `idx`" if meta.istable else ""
 			for refdoc in frappe.db.sql(
 				"""select `name`, `docstatus` {table} from `tab{parent}` where
-				{options}=%s and {fieldname}=%s""".format(**df),
+				`{options}`=%s and `{fieldname}`=%s""".format(**df),
 				(doc.doctype, doc.name),
 				as_dict=True,
 			):

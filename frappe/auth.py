@@ -11,6 +11,7 @@ import frappe.database
 import frappe.utils
 import frappe.utils.user
 from frappe import _
+from frappe.apps import get_default_path
 from frappe.core.doctype.activity_log.activity_log import add_authentication_log
 from frappe.sessions import Session, clear_sessions, delete_session, get_expiry_in_seconds
 from frappe.translate import get_language
@@ -125,6 +126,8 @@ class LoginManager:
 				self.set_user_info()
 
 	def login(self):
+		self.run_trigger("before_login")
+
 		if frappe.get_system_settings("disable_user_pass_login"):
 			frappe.throw(_("Login with username and password is not allowed."), frappe.AuthenticationError)
 
@@ -181,7 +184,7 @@ class LoginManager:
 			frappe.local.cookie_manager.set_cookie("system_user", "yes")
 			if not resume:
 				frappe.local.response["message"] = "Logged In"
-				frappe.local.response["home_page"] = "/app"
+				frappe.local.response["home_page"] = get_default_path() or "/apps"
 
 		if not resume:
 			frappe.response["full_name"] = self.full_name
@@ -268,9 +271,7 @@ class LoginManager:
 		if self.user in frappe.STANDARD_USERS:
 			return False
 
-		reset_pwd_after_days = cint(
-			frappe.db.get_single_value("System Settings", "force_user_to_reset_password")
-		)
+		reset_pwd_after_days = cint(frappe.get_system_settings("force_user_to_reset_password"))
 
 		if reset_pwd_after_days:
 			last_password_reset_date = (
@@ -285,7 +286,7 @@ class LoginManager:
 	def check_password(self, user, pwd):
 		"""check password"""
 		try:
-			# returns user in correct case
+			# return user in correct case
 			return check_password(user, pwd)
 		except frappe.AuthenticationError:
 			self.fail("Incorrect password", user=user)
@@ -304,8 +305,8 @@ class LoginManager:
 
 	def validate_hour(self):
 		"""check if user is logging in during restricted hours"""
-		login_before = int(frappe.db.get_value("User", self.user, "login_before", ignore=True) or 0)
-		login_after = int(frappe.db.get_value("User", self.user, "login_after", ignore=True) or 0)
+		login_before = cint(frappe.db.get_value("User", self.user, "login_before", ignore=True))
+		login_after = cint(frappe.db.get_value("User", self.user, "login_after", ignore=True))
 
 		if not (login_before or login_after):
 			return
@@ -342,6 +343,8 @@ class LoginManager:
 		if user == frappe.session.user:
 			delete_session(frappe.session.sid, user=user, reason="User Manually Logged Out")
 			self.clear_cookies()
+			if frappe.request:
+				self.login_as_guest()
 		else:
 			clear_sessions(user)
 
@@ -419,7 +422,18 @@ def clear_cookies():
 
 
 def validate_ip_address(user):
-	"""check if IP Address is valid"""
+	"""
+	Method to check if the user has IP restrictions enabled, and if so is the IP address they are
+	connecting from allowlisted.
+
+	Certain methods called from our socketio backend need direct access, and so the IP is not
+	checked for those
+	"""
+	if hasattr(frappe.local, "request") and frappe.local.request.path.startswith(
+		"/api/method/frappe.realtime."
+	):
+		return True
+
 	from frappe.core.doctype.user.user import get_restricted_ip_list
 
 	# Only fetch required fields - for perf

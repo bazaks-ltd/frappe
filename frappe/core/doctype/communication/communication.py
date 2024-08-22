@@ -3,7 +3,7 @@
 
 from collections import Counter
 from email.utils import getaddresses
-from urllib.parse import unquote
+from urllib.parse import unquote_plus
 
 from bs4 import BeautifulSoup
 
@@ -119,6 +119,7 @@ class Communication(Document, CommunicationEmailMixin):
 		unread_notification_sent: DF.Check
 		user: DF.Link | None
 	# end: auto-generated types
+
 	"""Communication represents an external communication like Email."""
 
 	no_feed_on_delete = True
@@ -297,7 +298,7 @@ class Communication(Document, CommunicationEmailMixin):
 
 	@staticmethod
 	def _get_emails_list(emails=None, exclude_displayname=False):
-		"""Returns list of emails from given email string.
+		"""Return list of emails from given email string.
 
 		* Removes duplicate mailids
 		* Removes display name from email address if exclude_displayname is True
@@ -308,15 +309,15 @@ class Communication(Document, CommunicationEmailMixin):
 		return [email for email in set(emails) if email]
 
 	def to_list(self, exclude_displayname=True):
-		"""Returns to list."""
+		"""Return `to` list."""
 		return self._get_emails_list(self.recipients, exclude_displayname=exclude_displayname)
 
 	def cc_list(self, exclude_displayname=True):
-		"""Returns cc list."""
+		"""Return `cc` list."""
 		return self._get_emails_list(self.cc, exclude_displayname=exclude_displayname)
 
 	def bcc_list(self, exclude_displayname=True):
-		"""Returns bcc list."""
+		"""Return `bcc` list."""
 		return self._get_emails_list(self.bcc, exclude_displayname=exclude_displayname)
 
 	def get_attachments(self):
@@ -503,12 +504,14 @@ def on_doctype_update():
 def has_permission(doc, ptype, user=None, debug=False):
 	if ptype == "read":
 		if doc.reference_doctype == "Communication" and doc.reference_name == doc.name:
-			return
+			return True
 
 		if doc.reference_doctype and doc.reference_name:
 			return frappe.has_permission(
 				doc.reference_doctype, ptype="read", doc=doc.reference_name, user=user, debug=debug
 			)
+
+	return True
 
 
 def get_permission_query_conditions_for_communication(user):
@@ -590,47 +593,62 @@ def parse_email(email_strings):
 	When automatic email linking is enabled, an email from email_strings can contain
 	a doctype and docname ie in the format `admin+doctype+docname@example.com` or `admin+doctype=docname@example.com`,
 	the email is parsed and doctype and docname is extracted.
+
+	see: RFC5233
 	"""
 	for email_string in email_strings:
 		if not email_string:
 			continue
 
 		for email in email_string.split(","):
-			email_username = email.split("@", 1)[0]
-			email_local_parts = email_username.split("+")
-			docname = doctype = None
-			if len(email_local_parts) == 3:
-				doctype = unquote(email_local_parts[1])
-				docname = unquote(email_local_parts[2])
+			local_part = email.split("@", 1)[0].strip('"')
+			user, detail = None, None
+			if "+" in local_part:
+				user, detail = local_part.split("+", 1)
+			elif "--" in local_part:
+				detail, user = local_part.rsplit("--", 1)
 
-			elif len(email_local_parts) == 2:
-				document_parts = email_local_parts[1].split("=", 1)
-				if len(document_parts) != 2:
-					continue
+			if not detail:
+				continue
 
-				doctype = unquote(document_parts[0])
-				docname = unquote(document_parts[1])
+			document_parts = None
+			if "=" in detail:
+				document_parts = detail.split("=", 1)
+			elif "+" in detail:
+				document_parts = detail.split("+", 1)
 
-			if doctype and docname:
-				yield doctype, docname
+			if not document_parts or len(document_parts) != 2:
+				continue
+
+			doctype = unquote_plus(document_parts[0])
+			docname = unquote_plus(document_parts[1])
+			yield doctype, docname
 
 
 def get_email_without_link(email):
-	"""
-	returns email address without doctype links
-	returns admin@example.com for email admin+doctype+docname@example.com
+	"""Return email address without doctype links.
+
+	e.g. 'admin@example.com' is returned for email 'admin+doctype+docname@example.com'
+
+	see: RFC5233
 	"""
 	if not frappe.get_all("Email Account", filters={"enable_automatic_linking": 1}):
 		return email
 
 	try:
 		_email = email.split("@")
-		email_id = _email[0].split("+", 1)[0]
-		email_host = _email[1]
+		_local_part = _email[0].strip('"')
+		if "+" in _local_part:
+			user = _local_part.split("+", 1)[0]
+		elif "--" in _local_part:
+			user = _local_part.split("--", 1)[1]
+		else:
+			user = _local_part
+		domain = _email[1]
 	except IndexError:
 		return email
 
-	return f"{email_id}@{email_host}"
+	return f"{user}@{domain}"
 
 
 def update_parent_document_on_communication(doc):

@@ -38,8 +38,8 @@ class S3BackupSettings(Document):
 		notify_email: DF.Data
 		secret_access_key: DF.Password
 		send_email_for_successful_backup: DF.Check
-
 	# end: auto-generated types
+
 	def validate(self):
 		if not self.enabled:
 			return
@@ -191,6 +191,6 @@ def upload_file_to_s3(filename, folder, conn, bucket):
 		print("Uploading file:", filename)
 		conn.upload_file(filename, bucket, destpath)  # Requires PutObject permission
 
-	except Exception as e:
+	except Exception:
 		frappe.log_error()
-		print("Error uploading: %s" % (e))
+		notify()
