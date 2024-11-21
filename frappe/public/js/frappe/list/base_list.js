@@ -169,7 +169,7 @@ frappe.views.BaseList = class BaseList {
 	setup_page() {
 		this.page = this.parent.page;
 		this.$page = $(this.parent);
-		!this.hide_card_layout && this.page.main.addClass("frappe-card");
+		this.page.main.addClass("layout-main-list");
 		this.page.page_form.removeClass("row").addClass("flex");
 		this.hide_page_form && this.page.page_form.hide();
 		this.hide_sidebar && this.$page.addClass("no-list-sidebar");
@@ -435,6 +435,20 @@ frappe.views.BaseList = class BaseList {
 		});
 	}
 
+	set_result_height() {
+		// place it at the footer of the page
+		this.$result.css({
+			height:
+				window.innerHeight -
+				this.$result.get(0).offsetTop -
+				this.$paging_area.get(0).offsetHeight +
+				"px",
+		});
+		this.$no_result.css({
+			height: window.innerHeight - this.$no_result.get(0).offsetTop + "px",
+		});
+	}
+
 	get_fields() {
 		// convert [fieldname, Doctype] => tabDoctype.fieldname
 		return this.fields.map((f) => frappe.model.get_full_column_name(f[0], f[1]));
@@ -516,6 +530,7 @@ frappe.views.BaseList = class BaseList {
 			this.before_render();
 			this.render();
 			this.after_render();
+			this.set_result_height();
 			this.freeze(false);
 			this.reset_defaults();
 			if (this.settings.refresh) {
@@ -581,8 +596,10 @@ frappe.views.BaseList = class BaseList {
 		this.$paging_area.toggle(this.data.length > 0);
 		this.$no_result.toggle(this.data.length == 0);
 
-		const show_more = this.start + this.page_length <= this.data.length;
-		this.$paging_area.find(".btn-more").toggle(show_more);
+		if (this.data.length) {
+			const show_more = this.start + this.page_length <= this.data.length;
+			this.$paging_area.find(".btn-more").toggle(show_more);
+		}
 	}
 
 	call_for_selected_items(method, args = {}) {
@@ -774,7 +791,7 @@ class FilterArea {
 		});
 	}
 
-	make_standard_filters() {
+	async make_standard_filters() {
 		this.standard_filters_wrapper = this.list_view.page.page_form.find(
 			".standard-filter-section"
 		);
@@ -790,12 +807,24 @@ class FilterArea {
 			});
 		}
 
-		if (this.list_view.custom_filter_configs) {
-			this.list_view.custom_filter_configs.forEach((config) => {
-				config.onchange = () => this.debounced_refresh_list_view();
-			});
+		if (
+			this.list_view.custom_filter_configs ||
+			this.list_view.settings.custom_filter_configs
+		) {
+			const custom_filter_configs =
+				this.list_view.custom_filter_configs ||
+				this.list_view.settings.custom_filter_configs;
+			await Promise.resolve(
+				typeof custom_filter_configs === "function"
+					? custom_filter_configs()
+					: custom_filter_configs
+			).then((configs) => {
+				configs.forEach((config) => {
+					config.onchange = () => this.debounced_refresh_list_view();
+				});
 
-			fields = fields.concat(this.list_view.custom_filter_configs);
+				fields = fields.concat(configs);
+			});
 		}
 
 		const doctype_fields = this.list_view.meta.fields;
