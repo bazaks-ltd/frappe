@@ -23,9 +23,7 @@ class EnergyPointSettings(Document):
 		review_levels: DF.Table[ReviewLevel]
 	# end: auto-generated types
 
-	def on_update(self):
-		if self.has_value_changed("enabled"):
-			frappe.cache.delete_key("bootinfo")
+	pass
 
 
 def is_energy_point_enabled():

@@ -2,17 +2,8 @@
 # See license.txt
 
 # import frappe
-from frappe.tests import IntegrationTestCase, UnitTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class UnitTestWorkspaceSettings(UnitTestCase):
-	"""
-	Unit tests for WorkspaceSettings.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
-
-
-class TestWorkspaceSettings(IntegrationTestCase):
+class TestWorkspaceSettings(FrappeTestCase):
 	pass

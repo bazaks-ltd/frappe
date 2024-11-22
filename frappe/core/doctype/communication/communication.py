@@ -44,11 +44,33 @@ class Communication(Document, CommunicationEmailMixin):
 		_user_tags: DF.Data | None
 		bcc: DF.Code | None
 		cc: DF.Code | None
+		comment_type: DF.Literal[
+			"",
+			"Comment",
+			"Like",
+			"Info",
+			"Label",
+			"Workflow",
+			"Created",
+			"Submitted",
+			"Cancelled",
+			"Updated",
+			"Deleted",
+			"Assigned",
+			"Assignment Completed",
+			"Attachment",
+			"Attachment Removed",
+			"Shared",
+			"Unshared",
+			"Relinked",
+		]
 		communication_date: DF.Datetime | None
 		communication_medium: DF.Literal[
 			"", "Email", "Chat", "Phone", "SMS", "Event", "Meeting", "Visit", "Other"
 		]
-		communication_type: DF.Literal["Communication", "Automated Message"]
+		communication_type: DF.Literal[
+			"Communication", "Comment", "Chat", "Notification", "Feedback", "Automated Message"
+		]
 		content: DF.TextEditor | None
 		delivery_status: DF.Literal[
 			"",
@@ -70,11 +92,13 @@ class Communication(Document, CommunicationEmailMixin):
 		email_account: DF.Link | None
 		email_status: DF.Literal["Open", "Spam", "Trash"]
 		email_template: DF.Link | None
+		feedback_request: DF.Data | None
 		has_attachment: DF.Check
 		imap_folder: DF.Data | None
 		in_reply_to: DF.Link | None
 		message_id: DF.SmallText | None
 		phone_no: DF.Data | None
+		rating: DF.Int
 		read_by_recipient: DF.Check
 		read_by_recipient_on: DF.Datetime | None
 		read_receipt: DF.Check
@@ -194,7 +218,19 @@ class Communication(Document, CommunicationEmailMixin):
 		if self.reference_doctype == "Communication" and self.sent_or_received == "Sent":
 			frappe.db.set_value("Communication", self.reference_name, "status", "Replied")
 
-		self.notify_change("add")
+		if self.communication_type == "Communication":
+			self.notify_change("add")
+
+		elif self.communication_type in ("Chat", "Notification"):
+			if self.reference_name == frappe.session.user:
+				message = self.as_dict()
+				message["broadcast"] = True
+				frappe.publish_realtime("new_message", message, after_commit=True)
+			else:
+				# reference_name contains the user who is addressed in the messages' page comment
+				frappe.publish_realtime(
+					"new_message", self.as_dict(), user=self.reference_name, after_commit=True
+				)
 
 	def set_signature_in_email_content(self):
 		"""Set sender's User.email_signature or default outgoing's EmailAccount.signature to the email"""
@@ -248,10 +284,13 @@ class Communication(Document, CommunicationEmailMixin):
 		if (method := getattr(parent, "on_communication_update", None)) and callable(method):
 			parent.on_communication_update(self)
 			return
-		update_parent_document_on_communication(self)
+
+		if self.comment_type != "Updated":
+			update_parent_document_on_communication(self)
 
 	def on_trash(self):
-		self.notify_change("delete")
+		if self.communication_type == "Communication":
+			self.notify_change("delete")
 
 	@property
 	def sender_mailid(self):
@@ -303,8 +342,10 @@ class Communication(Document, CommunicationEmailMixin):
 	def set_status(self):
 		if self.reference_doctype and self.reference_name:
 			self.status = "Linked"
-		else:
+		elif self.communication_type == "Communication":
 			self.status = "Open"
+		else:
+			self.status = "Closed"
 
 		if self.send_after and self.is_new():
 			self.delivery_status = "Scheduled"
@@ -617,19 +658,17 @@ def update_parent_document_on_communication(doc):
 	if not parent:
 		return
 
+	# update parent mins_to_first_communication only if we create the Email communication
+	# ignore in case of only Comment is added
+	if doc.communication_type == "Comment":
+		return
+
 	status_field = parent.meta.get_field("status")
 	if status_field:
 		options = (status_field.options or "").splitlines()
 
-		# if status has a "Open" option and status is "Replied", then update the status for received communication
-		if (
-			("Open" in options)
-			and parent.status == "Replied"
-			and doc.sent_or_received == "Received"
-			or (
-				parent.doctype == "Issue" and ("Open" in options) and doc.sent_or_received == "Received"
-			)  # For 'Issue', current status is not considered.
-		):
+		# if status has a "Replied" option, then update the status for received communication
+		if ("Replied" in options) and doc.sent_or_received == "Received":
 			parent.db_set("status", "Open")
 			parent.run_method("handle_hold_time", "Replied")
 			apply_assignment_rule(parent)

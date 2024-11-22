@@ -788,9 +788,6 @@ $.extend(frappe.model, {
 	},
 
 	round_floats_in: function (doc, fieldnames) {
-		if (!doc) {
-			return;
-		}
 		if (!fieldnames) {
 			fieldnames = frappe.meta.get_fieldnames(doc.doctype, doc.parent, {
 				fieldtype: ["in", ["Currency", "Float"]],
@@ -798,7 +795,9 @@ $.extend(frappe.model, {
 		}
 		for (var i = 0, j = fieldnames.length; i < j; i++) {
 			var fieldname = fieldnames[i];
-			doc[fieldname] = flt(doc[fieldname], precision(fieldname, doc));
+			if (doc[fieldname]) {
+				doc[fieldname] = flt(doc[fieldname], precision(fieldname, doc));
+			}
 		}
 	},
 

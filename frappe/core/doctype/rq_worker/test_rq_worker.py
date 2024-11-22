@@ -3,19 +3,10 @@
 
 import frappe
 from frappe.core.doctype.rq_worker.rq_worker import RQWorker
-from frappe.tests import IntegrationTestCase, UnitTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class UnitTestRqWorker(UnitTestCase):
-	"""
-	Unit tests for RqWorker.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
-
-
-class TestRQWorker(IntegrationTestCase):
+class TestRQWorker(FrappeTestCase):
 	def test_get_worker_list(self):
 		workers = RQWorker.get_list()
 		self.assertGreaterEqual(len(workers), 1)

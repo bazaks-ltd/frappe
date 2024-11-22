@@ -92,7 +92,7 @@ class AutoRepeat(Document):
 			if start_date <= today_date:
 				self.start_date = today_date
 
-	def on_update(self):
+	def after_save(self):
 		frappe.get_doc(self.reference_doctype, self.reference_document).notify_update()
 
 	def on_trash(self):
@@ -122,9 +122,7 @@ class AutoRepeat(Document):
 	def validate_submit_on_creation(self):
 		if self.submit_on_creation and not frappe.get_meta(self.reference_doctype).is_submittable:
 			frappe.throw(
-				_("Cannot enable {0} for a non-submittable doctype").format(
-					frappe.bold(_("Submit on Creation"))
-				)
+				_("Cannot enable {0} for a non-submittable doctype").format(frappe.bold("Submit on Creation"))
 			)
 
 	def validate_dates(self):
@@ -136,9 +134,7 @@ class AutoRepeat(Document):
 
 		if self.end_date == self.start_date:
 			frappe.throw(
-				_("{0} should not be same as {1}").format(
-					frappe.bold(_("End Date")), frappe.bold(_("Start Date"))
-				)
+				_("{0} should not be same as {1}").format(frappe.bold("End Date"), frappe.bold("Start Date"))
 			)
 
 	def validate_email_id(self):

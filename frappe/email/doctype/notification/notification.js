@@ -22,9 +22,11 @@ frappe.notification = {
 				};
 			};
 
-			let get_date_change_options = function (fieldtypes) {
+			let get_date_change_options = function () {
 				let date_options = $.map(fields, function (d) {
-					return fieldtypes.includes(d.fieldtype) ? get_select_options(d) : null;
+					return d.fieldtype == "Date" || d.fieldtype == "Datetime"
+						? get_select_options(d)
+						: null;
 				});
 				// append creation and modified date to Date Change field
 				return date_options.concat([
@@ -77,16 +79,7 @@ frappe.notification = {
 			frm.set_df_property("set_property_after_alert", "options", [""].concat(options));
 
 			// set date changed options
-			frm.set_df_property(
-				"date_changed",
-				"options",
-				get_date_change_options(["Date", "Datetime"])
-			);
-			frm.set_df_property(
-				"datetime_changed",
-				"options",
-				get_date_change_options(["Datetime"])
-			);
+			frm.set_df_property("date_changed", "options", get_date_change_options());
 
 			let receiver_fields = [];
 			if (frm.doc.channel === "Email") {

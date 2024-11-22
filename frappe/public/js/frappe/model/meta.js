@@ -285,7 +285,7 @@ $.extend(frappe.meta, {
 	},
 
 	get_field_currency: function (df, doc) {
-		var currency = frappe.boot.sysdefaults.currency || "USD";
+		var currency = frappe.boot.sysdefaults.currency;
 		if (!doc && cur_frm) doc = cur_frm.doc;
 
 		if (df && df.options) {

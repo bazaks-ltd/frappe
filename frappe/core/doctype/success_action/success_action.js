@@ -45,9 +45,7 @@ frappe.ui.form.on("Success Action", {
 				fieldname: "next_actions_multicheck",
 				fieldtype: "MultiCheck",
 				options: action_multicheck_options,
-				select_all: true,
 			},
-			render_input: true,
 		});
 	},
 });

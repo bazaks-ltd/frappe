@@ -9,21 +9,12 @@ from frappe.model.workflow import (
 	get_common_transition_actions,
 )
 from frappe.query_builder import DocType
-from frappe.tests import IntegrationTestCase, UnitTestCase
-from frappe.tests.utils import make_test_records
+from frappe.test_runner import make_test_records
+from frappe.tests.utils import FrappeTestCase
 from frappe.utils import random_string
 
 
-class UnitTestWorkflow(UnitTestCase):
-	"""
-	Unit tests for Workflow.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
-
-
-class TestWorkflow(IntegrationTestCase):
+class TestWorkflow(FrappeTestCase):
 	@classmethod
 	def setUpClass(cls):
 		super().setUpClass()

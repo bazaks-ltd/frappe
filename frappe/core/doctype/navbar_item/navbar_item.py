@@ -15,7 +15,6 @@ class NavbarItem(Document):
 		from frappe.types import DF
 
 		action: DF.Data | None
-		condition: DF.Code | None
 		hidden: DF.Check
 		is_standard: DF.Check
 		item_label: DF.Data | None

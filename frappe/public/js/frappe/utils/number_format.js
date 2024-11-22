@@ -177,12 +177,8 @@ function get_currency_symbol(currency) {
 }
 
 function get_number_format(currency) {
-	let sysdefaults = frappe?.boot?.sysdefaults;
 	return (
-		(cint(sysdefaults?.use_number_format_from_currency) &&
-			currency &&
-			frappe.model.get_value(":Currency", currency, "number_format")) ||
-		sysdefaults.number_format ||
+		(frappe.boot && frappe.boot.sysdefaults && frappe.boot.sysdefaults.number_format) ||
 		"#,###.##"
 	);
 }

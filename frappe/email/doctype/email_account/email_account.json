@@ -95,7 +95,8 @@
    "in_list_view": 1,
    "label": "Email Address",
    "options": "Email",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
    "default": "0",
@@ -696,7 +697,7 @@
  "icon": "fa fa-inbox",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-11 10:12:06.667888",
+ "modified": "2024-07-18 11:05:57.193762",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Email Account",

@@ -2,19 +2,10 @@
 # License: MIT. See LICENSE
 import frappe
 import frappe.cache_manager
-from frappe.tests import IntegrationTestCase, UnitTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class UnitTestMilestoneTracker(UnitTestCase):
-	"""
-	Unit tests for MilestoneTracker.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
-
-
-class TestMilestoneTracker(IntegrationTestCase):
+class TestMilestoneTracker(FrappeTestCase):
 	def test_milestone(self):
 		frappe.db.delete("Milestone Tracker")
 

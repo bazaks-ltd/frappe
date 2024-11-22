@@ -244,7 +244,7 @@
    "fieldname": "campaign",
    "fieldtype": "Link",
    "label": "Campaign",
-   "options": "UTM Campaign"
+   "options": "Marketing Campaign"
   }
  ],
  "has_web_view": 1,
@@ -253,8 +253,7 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
  "links": [],
- "make_attachments_public": 1,
- "modified": "2024-11-12 12:41:02.569631",
+ "modified": "2024-03-23 16:03:30.890080",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Newsletter",

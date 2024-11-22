@@ -1,21 +1,12 @@
 # Copyright (c) 2017, Frappe Technologies and Contributors
 # License: MIT. See LICENSE
 import frappe
-from frappe.tests import IntegrationTestCase, UnitTestCase
+from frappe.tests.utils import FrappeTestCase
 
-EXTRA_TEST_RECORD_DEPENDENCIES = ["Role"]
-
-
-class UnitTestRoleProfile(UnitTestCase):
-	"""
-	Unit tests for RoleProfile.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
+test_dependencies = ["Role"]
 
 
-class TestRoleProfile(IntegrationTestCase):
+class TestRoleProfile(FrappeTestCase):
 	def test_make_new_role_profiles(self):
 		frappe.delete_doc_if_exists("Role Profile", "Test 1", force=1)
 		new_role_profile = frappe.get_doc(doctype="Role Profile", role_profile="Test 1").insert()

@@ -1,17 +1,8 @@
 # Copyright (c) 2019, Frappe Technologies and Contributors
 # License: MIT. See LICENSE
 # import frappe
-from frappe.tests import IntegrationTestCase, UnitTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class UnitTestScheduledJobLog(UnitTestCase):
-	"""
-	Unit tests for ScheduledJobLog.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
-
-
-class TestScheduledJobLog(IntegrationTestCase):
+class TestScheduledJobLog(FrappeTestCase):
 	pass

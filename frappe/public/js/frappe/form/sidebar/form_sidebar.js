@@ -35,8 +35,6 @@ frappe.ui.form.Sidebar = class {
 
 		this.setup_keyboard_shortcuts();
 		this.show_auto_repeat_status();
-		this.show_error_log_status();
-		this.show_webhook_request_log_status();
 		frappe.ui.form.setup_user_image_event(this.frm);
 
 		this.refresh();
@@ -73,7 +71,6 @@ frappe.ui.form.Sidebar = class {
 			frappe.utils.get_page_view_count(route).then((res) => {
 				this.sidebar
 					.find(".pageview-count")
-					.removeClass("hidden")
 					.html(__("{0} Web page views", [String(res.message).bold()]));
 			});
 		}
@@ -146,44 +143,13 @@ frappe.ui.form.Sidebar = class {
 					fieldname: ["frequency"],
 				},
 				callback: function (res) {
-					let el = me.sidebar.find(".auto-repeat-status");
-					el.find("span").html(__("Repeats {0}", [__(res.message.frequency)]));
-					el.closest(".sidebar-section").removeClass("hidden");
-					el.show();
-					el.on("click", function () {
+					me.sidebar
+						.find(".auto-repeat-status")
+						.html(__("Repeats {0}", [__(res.message.frequency)]));
+					me.sidebar.find(".auto-repeat-status").on("click", function () {
 						frappe.set_route("Form", "Auto Repeat", me.frm.doc.auto_repeat);
 					});
 				},
-			});
-		}
-	}
-
-	show_error_log_status() {
-		const docinfo = this.frm.get_docinfo();
-		if (docinfo.error_log_exists) {
-			let el = this.sidebar.find(".error-log-status");
-			el.closest(".sidebar-section").removeClass("hidden");
-			el.show();
-			el.on("click", () => {
-				frappe.set_route("List", "Error Log", {
-					reference_doctype: this.frm.doc.doctype,
-					reference_name: this.frm.doc.name,
-				});
-			});
-		}
-	}
-
-	show_webhook_request_log_status() {
-		const docinfo = this.frm.get_docinfo();
-		if (docinfo.webhook_request_log_exists) {
-			let el = this.sidebar.find(".webhook-request-log-status");
-			el.closest(".sidebar-section").removeClass("hidden");
-			el.show();
-			el.on("click", () => {
-				frappe.set_route("List", "Webhook Request Log", {
-					reference_doctype: this.frm.doc.doctype,
-					reference_document: this.frm.doc.name,
-				});
 			});
 		}
 	}
@@ -232,9 +198,7 @@ frappe.ui.form.Sidebar = class {
 		return $("<a>")
 			.html(label)
 			.appendTo(
-				$('<div class="user-action-row"></div>').appendTo(
-					this.user_actions.removeClass("hidden")
-				)
+				$('<li class="user-action-row">').appendTo(this.user_actions.removeClass("hidden"))
 			)
 			.on("click", click);
 	}

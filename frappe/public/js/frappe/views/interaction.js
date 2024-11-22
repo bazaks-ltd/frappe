@@ -281,29 +281,31 @@ frappe.views.InteractionComposer = class InteractionComposer {
 	}
 
 	assign_document(doc, assignee) {
-		frappe.call({
-			method: "frappe.desk.form.assign_to.add",
-			args: {
-				doctype: doc.doctype,
-				name: doc.name,
-				assign_to: JSON.stringify([assignee]),
-			},
-			callback: function (r) {
-				if (!r.exc) {
-					frappe.show_alert({
-						message: __("The document has been assigned to {0}", [assignee]),
-						indicator: "green",
-					});
-					return;
-				} else {
-					frappe.show_alert({
-						message: __("The document could not be correctly assigned"),
-						indicator: "orange",
-					});
-					return;
-				}
-			},
-		});
+		if (doc.doctype != "ToDo") {
+			frappe.call({
+				method: "frappe.desk.form.assign_to.add",
+				args: {
+					doctype: doc.doctype,
+					name: doc.name,
+					assign_to: JSON.stringify([assignee]),
+				},
+				callback: function (r) {
+					if (!r.exc) {
+						frappe.show_alert({
+							message: __("The document has been assigned to {0}", [assignee]),
+							indicator: "green",
+						});
+						return;
+					} else {
+						frappe.show_alert({
+							message: __("The document could not be correctly assigned"),
+							indicator: "orange",
+						});
+						return;
+					}
+				},
+			});
+		}
 	}
 
 	add_attachments(doc, attachments) {

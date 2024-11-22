@@ -13,10 +13,10 @@ export default class ListFilter {
 	make() {
 		// init dom
 		this.wrapper.html(`
-			<div class="input-area"></div>
-			<div class="sidebar-action">
+			<li class="input-area"></li>
+			<li class="sidebar-action">
 				<a class="saved-filters-preview">${__("Show Saved")}</a>
-			</div>
+			</li>
 			<div class="saved-filters"></div>
 		`);
 

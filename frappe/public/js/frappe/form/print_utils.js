@@ -1,12 +1,10 @@
 frappe.ui.get_print_settings = function (pdf, callback, letter_head, pick_columns) {
 	var print_settings = locals[":Print Settings"]["Print Settings"];
 
-	var company = frappe.defaults.get_default("company");
-	var default_letter_head = "";
-
-	if (locals[":Company"] && locals[":Company"][company]) {
-		default_letter_head = locals[":Company"][company]["default_letter_head"] || "";
-	}
+	var default_letter_head =
+		locals[":Company"] && frappe.defaults.get_default("company")
+			? locals[":Company"][frappe.defaults.get_default("company")]["default_letter_head"]
+			: "";
 
 	var columns = [
 		{

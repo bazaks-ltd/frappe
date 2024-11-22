@@ -187,5 +187,10 @@ def backup_to_s3():
 
 def upload_file_to_s3(filename, folder, conn, bucket):
 	destpath = os.path.join(folder, os.path.basename(filename))
-	print("Uploading file:", filename)
-	conn.upload_file(filename, bucket, destpath)  # Requires PutObject permission
+	try:
+		print("Uploading file:", filename)
+		conn.upload_file(filename, bucket, destpath)  # Requires PutObject permission
+
+	except Exception:
+		frappe.log_error()
+		notify()

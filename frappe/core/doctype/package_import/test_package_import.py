@@ -2,17 +2,8 @@
 # See license.txt
 
 # import frappe
-from frappe.tests import IntegrationTestCase, UnitTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class UnitTestPackageImport(UnitTestCase):
-	"""
-	Unit tests for PackageImport.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
-
-
-class TestPackageImport(IntegrationTestCase):
+class TestPackageImport(FrappeTestCase):
 	pass

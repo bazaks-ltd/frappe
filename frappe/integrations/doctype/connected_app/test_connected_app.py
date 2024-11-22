@@ -8,7 +8,7 @@ import frappe
 from frappe.integrations.doctype.social_login_key.test_social_login_key import (
 	create_or_update_social_login_key,
 )
-from frappe.tests import IntegrationTestCase, UnitTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
 def get_user(usr, pwd):
@@ -48,16 +48,7 @@ def get_oauth_client():
 	return oauth_client
 
 
-class UnitTestConnectedApp(UnitTestCase):
-	"""
-	Unit tests for ConnectedApp.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
-
-
-class TestConnectedApp(IntegrationTestCase):
+class TestConnectedApp(FrappeTestCase):
 	def setUp(self):
 		"""Set up a Connected App that connects to our own oAuth provider.
 

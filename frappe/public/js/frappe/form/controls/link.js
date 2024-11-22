@@ -5,6 +5,7 @@
 // custom queries
 // add_fetches
 import Awesomplete from "awesomplete";
+
 frappe.ui.form.recent_link_validations = {};
 
 frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlData {
@@ -14,9 +15,6 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 		$(`<div class="link-field ui-front" style="position: relative;">
 			<input type="text" class="input-with-feedback form-control">
 			<span class="link-btn">
-				<a class="btn-clear no-decoration">
-					${frappe.utils.icon("close", "xs", "es-icon")}
-				</a>
 				<a class="btn-open no-decoration" title="${__("Open Link")}">
 					${frappe.utils.icon("arrow-right", "xs")}
 				</a>
@@ -25,7 +23,6 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 		this.$input_area = $(this.input_area);
 		this.$input = this.$input_area.find("input");
 		this.$link = this.$input_area.find(".link-btn");
-		this.$link_clear = this.$input_area.find(".btn-clear");
 		this.$link_open = this.$link.find(".btn-open");
 		this.set_input_attributes();
 		this.$input.on("focus", function () {
@@ -35,11 +32,6 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 					let name = me.get_input_value();
 					me.$link.toggle(true);
 					me.$link_open.attr("href", frappe.utils.get_form_link(doctype, name));
-					me.$link_clear.on("click", function () {
-						me.$link.toggle(false);
-						me.set_value("");
-						me.validate();
-					});
 				}
 
 				if (!me.$input.val()) {
@@ -335,9 +327,6 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 						me.$input.cache[doctype][term] = r.message;
 						me.awesomplete.list = me.$input.cache[doctype][term];
 						me.toggle_href(doctype);
-						r.message.forEach((item) => {
-							frappe.utils.add_link_title(doctype, item.value, item.label);
-						});
 					},
 				});
 			}, 500)

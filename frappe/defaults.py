@@ -168,9 +168,6 @@ def set_default(key, value, parent, parenttype="__default"):
 	else:
 		_clear_cache(parent)
 
-	if parent:
-		clear_defaults_cache(parent)
-
 
 def add_default(key, value, parent, parenttype=None):
 	d = frappe.get_doc(

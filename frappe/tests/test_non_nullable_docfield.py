@@ -1,10 +1,10 @@
 import frappe
 from frappe.core.doctype.doctype.test_doctype import new_doctype
 from frappe.database.schema import DBTable
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class TestNonNullableDocfield(IntegrationTestCase):
+class TestNonNullableDocfield(FrappeTestCase):
 	def setUp(self):
 		doc = new_doctype(
 			fields=[

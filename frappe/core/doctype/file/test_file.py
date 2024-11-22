@@ -20,7 +20,7 @@ from frappe.core.doctype.file.exceptions import FileTypeNotAllowed
 from frappe.core.doctype.file.utils import get_corrupted_image_msg, get_extension
 from frappe.desk.form.utils import add_comment
 from frappe.exceptions import ValidationError
-from frappe.tests import IntegrationTestCase, UnitTestCase
+from frappe.tests.utils import FrappeTestCase, change_settings
 from frappe.utils import get_files_path, set_request
 
 if TYPE_CHECKING:
@@ -61,16 +61,7 @@ def make_test_image_file(private=False):
 		_test_file.delete()
 
 
-class UnitTestFile(UnitTestCase):
-	"""
-	Unit tests for File.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
-
-
-class TestSimpleFile(IntegrationTestCase):
+class TestSimpleFile(FrappeTestCase):
 	def setUp(self):
 		self.attached_to_doctype, self.attached_to_docname = make_test_doc()
 		self.test_content = test_content1
@@ -92,7 +83,7 @@ class TestSimpleFile(IntegrationTestCase):
 		self.assertEqual(content, self.test_content)
 
 
-class TestFSRollbacks(IntegrationTestCase):
+class TestFSRollbacks(FrappeTestCase):
 	def test_rollback_from_file_system(self):
 		file_name = content = frappe.generate_hash()
 		file = frappe.new_doc("File", file_name=file_name, content=content).insert()
@@ -102,8 +93,8 @@ class TestFSRollbacks(IntegrationTestCase):
 		self.assertFalse(file.exists_on_disk())
 
 
-class TestExtensionValidations(IntegrationTestCase):
-	@IntegrationTestCase.change_settings("System Settings", {"allowed_file_extensions": "JPG\nCSV"})
+class TestExtensionValidations(FrappeTestCase):
+	@change_settings("System Settings", {"allowed_file_extensions": "JPG\nCSV"})
 	def test_allowed_extension(self):
 		set_request(method="POST", path="/")
 		file_name = content = frappe.generate_hash()
@@ -115,7 +106,7 @@ class TestExtensionValidations(IntegrationTestCase):
 		self.assertFalse(bad_file.exists_on_disk())
 
 
-class TestBase64File(IntegrationTestCase):
+class TestBase64File(FrappeTestCase):
 	def setUp(self):
 		self.attached_to_doctype, self.attached_to_docname = make_test_doc()
 		self.test_content = base64.b64encode(test_content1.encode("utf-8"))
@@ -138,7 +129,7 @@ class TestBase64File(IntegrationTestCase):
 		self.assertEqual(content, test_content1)
 
 
-class TestSameFileName(IntegrationTestCase):
+class TestSameFileName(FrappeTestCase):
 	def test_saved_content(self):
 		self.attached_to_doctype, self.attached_to_docname = make_test_doc()
 		self.test_content1 = test_content1
@@ -198,7 +189,7 @@ class TestSameFileName(IntegrationTestCase):
 		self.assertEqual(_file.get_content(), test_content2)
 
 
-class TestSameContent(IntegrationTestCase):
+class TestSameContent(FrappeTestCase):
 	def setUp(self):
 		self.attached_to_doctype1, self.attached_to_docname1 = make_test_doc()
 		self.attached_to_doctype2, self.attached_to_docname2 = make_test_doc()
@@ -283,7 +274,7 @@ class TestSameContent(IntegrationTestCase):
 		self.assertEqual(file_content_properly_decoded, test_content1)
 
 
-class TestFile(IntegrationTestCase):
+class TestFile(FrappeTestCase):
 	def setUp(self):
 		frappe.set_user("Administrator")
 		self.delete_test_data()
@@ -604,7 +595,7 @@ def convert_to_symlink(directory):
 		shutil.move(new_directory, directory)
 
 
-class TestAttachment(IntegrationTestCase):
+class TestAttachment(FrappeTestCase):
 	test_doctype = "Test For Attachment"
 
 	@classmethod
@@ -650,7 +641,7 @@ class TestAttachment(IntegrationTestCase):
 		self.assertTrue(exists)
 
 
-class TestAttachmentsAccess(IntegrationTestCase):
+class TestAttachmentsAccess(FrappeTestCase):
 	def setUp(self) -> None:
 		frappe.db.delete("File", {"is_folder": 0})
 
@@ -716,7 +707,7 @@ class TestAttachmentsAccess(IntegrationTestCase):
 		frappe.db.rollback()
 
 
-class TestFileUtils(IntegrationTestCase):
+class TestFileUtils(FrappeTestCase):
 	def test_extract_images_from_doc(self):
 		is_private = not frappe.get_meta("ToDo").make_attachments_public
 
@@ -801,7 +792,7 @@ class TestFileUtils(IntegrationTestCase):
 		self.assertTrue(folder.is_folder)
 
 
-class TestFileOptimization(IntegrationTestCase):
+class TestFileOptimization(FrappeTestCase):
 	def test_optimize_file(self):
 		with make_test_image_file() as test_file:
 			original_size = test_file.file_size
@@ -853,7 +844,7 @@ class TestFileOptimization(IntegrationTestCase):
 		self.assertEqual(get_extension("", None, file_content), "jpg")
 
 
-class TestGuestFileAndAttachments(IntegrationTestCase):
+class TestGuestFileAndAttachments(FrappeTestCase):
 	def setUp(self) -> None:
 		frappe.db.delete("File", {"is_folder": 0})
 		frappe.get_doc(

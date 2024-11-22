@@ -174,7 +174,6 @@ frappe.views.ListSidebar = class ListSidebar {
 		let sections = [
 			["tags-section", "list-tags"],
 			["save-filter-section", "list-filters"],
-			["filter-section", "list-group-by"],
 		];
 
 		for (let s of sections) {
@@ -238,11 +237,11 @@ frappe.views.ListSidebar = class ListSidebar {
 	}
 
 	set_loading_state(dropdown) {
-		dropdown.html(`<div>
+		dropdown.html(`<li>
 			<div class="empty-state">
 				${__("Loading...")}
 			</div>
-		</div>`);
+		</li>`);
 	}
 
 	render_stat(stats) {
@@ -298,8 +297,16 @@ frappe.views.ListSidebar = class ListSidebar {
 			const cta = "Frappe Insights";
 
 			this.insights_banner = $(`
-				<div class="sidebar-section">
-					${message} <a href="${link}" target="_blank" style="color: var(--text-color)">${cta} &rarr; </a>
+				<div style="position: relative;">
+					<div class="pr-3">
+						${message} <a href="${link}" target="_blank" style="color: var(--text-color)">${cta} &rarr; </a>
+					</div>
+					<div style="position: absolute; top: -1px; right: -4px; cursor: pointer;" title="Dismiss"
+						onclick="localStorage.setItem('show_insights_banner', 'false') || this.parentElement.remove()">
+						<svg class="icon  icon-sm" style="">
+							<use class="" href="#icon-close"></use>
+						</svg>
+					</div>
 				</div>
 			`).appendTo(this.sidebar);
 		} catch (error) {

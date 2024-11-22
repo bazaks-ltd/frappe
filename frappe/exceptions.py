@@ -11,12 +11,6 @@ class SiteNotSpecifiedError(Exception):
 		super(Exception, self).__init__(self.message)
 
 
-class DatabaseModificationError(Exception):
-	"""Error raised when attempting to modify the database in a read-only document context."""
-
-	pass
-
-
 class UrlSchemeNotSupported(Exception):
 	pass
 

@@ -101,11 +101,7 @@ def is_valid_title(title) -> bool:
 
 def get_license_options() -> list[str]:
 	url = "https://api.github.com/licenses"
-	try:
-		res = requests.get(url=url)
-	except requests.exceptions.RequestException:
-		return ["agpl-3.0", "gpl-3.0", "mit", "custom"]
-
+	res = requests.get(url=url)
 	if res.status_code == 200:
 		res = res.json()
 		ids = [r.get("spdx_id") for r in res]
@@ -116,10 +112,7 @@ def get_license_options() -> list[str]:
 
 def get_license_text(license_name: str) -> str:
 	url = f"https://api.github.com/licenses/{license_name.lower()}"
-	try:
-		res = requests.get(url=url)
-	except requests.exceptions.RequestException:
-		return "No license text found"
+	res = requests.get(url=url)
 	if res.status_code == 200:
 		res = res.json()
 		return res.get("body")
@@ -458,9 +451,6 @@ app_license = "{app_license}"
 # automatically create page for each record of this doctype
 # website_generators = ["Web Page"]
 
-# automatically load and sync documents of this doctype from downstream apps
-# importable_doctypes = [doctype_1]
-
 # Jinja
 # ----------
 
@@ -635,64 +625,16 @@ app_license = "{app_license}"
 
 """
 
-gitignore_template = """# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+gitignore_template = """.DS_Store
 *.pyc
-*.py~
-
-# Distribution / packaging
-.Python
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-tags
-MANIFEST
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Dependency directories
-node_modules/
-jspm_packages/
-
-# IDEs and editors
-.vscode/
-.vs/
-.idea/
-.kdev4/
-*.kdev4
-*.DS_Store
+*.egg-info
 *.swp
-*.comp.js
-.wnf-lang-status
-*debug.log
+tags
+node_modules
+__pycache__"""
 
-# Helix Editor
-.helix/
-
-# Aider AI Chat
-.aider*
-"""
-
-github_workflow_template = """name: CI
+github_workflow_template = """
+name: CI
 
 on:
   push:
@@ -878,7 +820,8 @@ ci:
     submodules: false
 """
 
-linter_workflow_template = """name: Linters
+linter_workflow_template = """
+name: Linters
 
 on:
   pull_request:
@@ -975,7 +918,8 @@ Pre-commit is configured to use the following tools for checking and formatting 
 {app_license}
 """
 
-readme_ci_section = """### CI
+readme_ci_section = """
+### CI
 
 This app can use GitHub Actions for CI. The following workflows are configured:
 

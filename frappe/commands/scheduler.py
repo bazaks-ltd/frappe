@@ -5,20 +5,19 @@ import click
 import frappe
 from frappe.commands import get_site, pass_context
 from frappe.exceptions import SiteNotSpecifiedError
-from frappe.utils.bench_helper import CliCtxObj
 
 
 @click.command("trigger-scheduler-event", help="Trigger a scheduler event")
 @click.argument("event")
 @pass_context
-def trigger_scheduler_event(context: CliCtxObj, event):
+def trigger_scheduler_event(context, event):
 	import frappe.utils.scheduler
 
 	exit_code = 0
 
 	for site in context.sites:
 		try:
-			frappe.init(site)
+			frappe.init(site=site)
 			frappe.connect()
 			try:
 				frappe.get_doc("Scheduled Job Type", {"method": event}).execute()
@@ -36,13 +35,13 @@ def trigger_scheduler_event(context: CliCtxObj, event):
 
 @click.command("enable-scheduler")
 @pass_context
-def enable_scheduler(context: CliCtxObj):
+def enable_scheduler(context):
 	"Enable scheduler"
 	import frappe.utils.scheduler
 
 	for site in context.sites:
 		try:
-			frappe.init(site)
+			frappe.init(site=site)
 			frappe.connect()
 			frappe.utils.scheduler.enable_scheduler()
 			frappe.db.commit()
@@ -55,13 +54,13 @@ def enable_scheduler(context: CliCtxObj):
 
 @click.command("disable-scheduler")
 @pass_context
-def disable_scheduler(context: CliCtxObj):
+def disable_scheduler(context):
 	"Disable scheduler"
 	import frappe.utils.scheduler
 
 	for site in context.sites:
 		try:
-			frappe.init(site)
+			frappe.init(site=site)
 			frappe.connect()
 			frappe.utils.scheduler.disable_scheduler()
 			frappe.db.commit()
@@ -78,7 +77,7 @@ def disable_scheduler(context: CliCtxObj):
 @click.option("--format", "-f", default="text", type=click.Choice(["json", "text"]), help="Output format")
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output")
 @pass_context
-def scheduler(context: CliCtxObj, state: str, format: str, verbose: bool = False, site: str | None = None):
+def scheduler(context, state: str, format: str, verbose: bool = False, site: str | None = None):
 	"""Control scheduler state."""
 	import frappe
 	from frappe.utils.scheduler import is_scheduler_inactive, toggle_scheduler
@@ -112,7 +111,7 @@ def scheduler(context: CliCtxObj, state: str, format: str, verbose: bool = False
 @click.option("--site", help="site name")
 @click.argument("state", type=click.Choice(["on", "off"]))
 @pass_context
-def set_maintenance_mode(context: CliCtxObj, state, site=None):
+def set_maintenance_mode(context, state, site=None):
 	"""Put the site in maintenance mode for upgrades."""
 	from frappe.installer import update_site_config
 
@@ -120,7 +119,7 @@ def set_maintenance_mode(context: CliCtxObj, state, site=None):
 		site = get_site(context)
 
 	try:
-		frappe.init(site)
+		frappe.init(site=site)
 		update_site_config("maintenance_mode", 1 if (state == "on") else 0)
 
 	finally:
@@ -130,7 +129,7 @@ def set_maintenance_mode(context: CliCtxObj, state, site=None):
 @click.command("doctor")  # Passing context always gets a site and if there is no use site it breaks
 @click.option("--site", help="site name")
 @pass_context
-def doctor(context: CliCtxObj, site=None):
+def doctor(context, site=None):
 	"Get diagnostic info about background workers"
 	from frappe.utils.doctor import doctor as _doctor
 
@@ -142,7 +141,7 @@ def doctor(context: CliCtxObj, site=None):
 @click.command("show-pending-jobs")
 @click.option("--site", help="site name")
 @pass_context
-def show_pending_jobs(context: CliCtxObj, site=None):
+def show_pending_jobs(context, site=None):
 	"Get diagnostic info about background jobs"
 	from frappe.utils.doctor import pending_jobs as _pending_jobs
 
@@ -232,14 +231,14 @@ def start_worker_pool(queue, quiet=False, num_workers=2, burst=False):
 @click.command("ready-for-migration")
 @click.option("--site", help="site name")
 @pass_context
-def ready_for_migration(context: CliCtxObj, site=None):
+def ready_for_migration(context, site=None):
 	from frappe.utils.doctor import any_job_pending
 
 	if not site:
 		site = get_site(context)
 
 	try:
-		frappe.init(site)
+		frappe.init(site=site)
 		pending_jobs = any_job_pending(site=site)
 
 		if pending_jobs:

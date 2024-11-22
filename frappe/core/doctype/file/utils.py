@@ -216,11 +216,9 @@ def get_file_name(fname: str, optional_suffix: str | None = None) -> str:
 	return f"{partial}{suffix}{extn}"
 
 
-def extract_images_from_doc(doc: "Document", fieldname: str, is_private=True):
+def extract_images_from_doc(doc: "Document", fieldname: str):
 	content = doc.get(fieldname)
-	if doc.meta.make_attachments_public:
-		is_private = False
-	content = extract_images_from_html(doc, content, is_private=is_private)
+	content = extract_images_from_html(doc, content, is_private=(not doc.meta.make_attachments_public))
 	if frappe.flags.has_dataurl:
 		doc.set(fieldname, content)
 

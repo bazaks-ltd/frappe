@@ -8,7 +8,7 @@ from frappe.core.doctype.doctype.test_doctype import new_doctype
 from frappe.desk.form.save import savedocs
 from frappe.model.document import Document
 from frappe.model.virtual_doctype import validate_controller
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 TEST_DOCTYPE_NAME = "VirtualDoctypeTest"
 TEST_CHILD_DOCTYPE_NAME = "VirtualDoctypeTestChild"
@@ -82,7 +82,7 @@ class VirtualDoctypeTest(Document):
 		return {}
 
 
-class TestVirtualDoctypes(IntegrationTestCase):
+class TestVirtualDoctypes(FrappeTestCase):
 	@classmethod
 	def setUpClass(cls):
 		frappe.flags.allow_doctype_export = True

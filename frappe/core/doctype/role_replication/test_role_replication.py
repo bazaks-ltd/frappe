@@ -2,17 +2,8 @@
 # See license.txt
 
 # import frappe
-from frappe.tests import IntegrationTestCase, UnitTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class UnitTestRoleReplication(UnitTestCase):
-	"""
-	Unit tests for RoleReplication.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
-
-
-class TestRoleReplication(IntegrationTestCase):
+class TestRoleReplication(FrappeTestCase):
 	pass

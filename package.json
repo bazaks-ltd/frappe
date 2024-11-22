@@ -4,8 +4,7 @@
     "build": "node esbuild",
     "production": "node esbuild --production",
     "watch": "node esbuild --watch",
-    "coverage:report": "npx nyc report --reporter=clover",
-    "postinstall": "cd billing && yarn install"
+    "coverage:report": "npx nyc report --reporter=clover"
   },
   "repository": {
     "type": "git",
@@ -31,7 +30,7 @@
     "@headlessui/vue": "^1.7.16",
     "@popperjs/core": "^2.11.2",
     "@redis/client": "^1.5.8",
-    "@sentry/browser": "^7.119.1",
+    "@sentry/browser": "^7.15.0",
     "@vue-flow/background": "^1.1.0",
     "@vue-flow/core": "^1.16.2",
     "@vue/component-compiler": "^4.2.4",
@@ -43,7 +42,7 @@
     "bootstrap": "4.6.2",
     "chalk": "^2.3.2",
     "cliui": "^7.0.4",
-    "cookie": "^0.7.0",
+    "cookie": "^0.4.0",
     "cropperjs": "^1.5.12",
     "cssnano": "^5.0.0",
     "driver.js": "^0.9.8",

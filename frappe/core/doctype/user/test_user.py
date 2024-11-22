@@ -22,23 +22,15 @@ from frappe.core.doctype.user.user import (
 from frappe.desk.notifications import extract_mentions
 from frappe.frappeclient import FrappeClient
 from frappe.model.delete_doc import delete_doc
-from frappe.tests import IntegrationTestCase, UnitTestCase
 from frappe.tests.test_api import FrappeAPITestCase
+from frappe.tests.utils import FrappeTestCase, change_settings
 from frappe.utils import get_url
 
 user_module = frappe.core.doctype.user.user
+test_records = frappe.get_test_records("User")
 
 
-class UnitTestUser(UnitTestCase):
-	"""
-	Unit tests for User.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
-
-
-class TestUser(IntegrationTestCase):
+class TestUser(FrappeTestCase):
 	def tearDown(self):
 		# disable password strength test
 		frappe.db.set_single_value("System Settings", "enable_password_policy", 0)
@@ -88,7 +80,7 @@ class TestUser(IntegrationTestCase):
 			delete_contact("_test@example.com")
 			delete_doc("User", "_test@example.com")
 
-		user = frappe.copy_doc(self.globalTestRecords["User"][1])
+		user = frappe.copy_doc(test_records[1])
 		user.email = "_test@example.com"
 		user.insert()
 
@@ -101,7 +93,9 @@ class TestUser(IntegrationTestCase):
 			not frappe.db.sql("""select * from `tabToDo` where allocated_to=%s""", ("_test@example.com",))
 		)
 
-		frappe.copy_doc(self.globalTestRecords["Role"][1]).insert()
+		from frappe.core.doctype.role.test_role import test_records as role_records
+
+		frappe.copy_doc(role_records[1]).insert()
 
 	def test_get_value(self):
 		self.assertEqual(frappe.db.get_value("User", "test@example.com"), "test@example.com")
@@ -285,7 +279,7 @@ class TestUser(IntegrationTestCase):
 		"""
 		self.assertListEqual(extract_mentions(comment), ["test@example.com", "test1@example.com"])
 
-	@IntegrationTestCase.change_settings("System Settings", commit=True, password_reset_limit=1)
+	@change_settings("System Settings", commit=True, password_reset_limit=1)
 	def test_rate_limiting_for_reset_password(self):
 		url = get_url()
 		data = {"cmd": "frappe.core.doctype.user.user.reset_password", "user": "test@test.com"}
@@ -364,7 +358,7 @@ class TestUser(IntegrationTestCase):
 				"/signup",
 			)
 
-	@IntegrationTestCase.change_settings("System Settings", password_reset_limit=6)
+	@change_settings("System Settings", password_reset_limit=6)
 	def test_reset_password(self):
 		from frappe.auth import CookieManager, LoginManager
 		from frappe.utils import set_request
@@ -412,7 +406,7 @@ class TestUser(IntegrationTestCase):
 
 		# test redirect URL for website users
 		frappe.set_user("test2@example.com")
-		self.assertEqual(update_password(new_password, old_password=old_password), "me")
+		self.assertEqual(update_password(new_password, old_password=old_password), "/")
 		# reset password
 		update_password(old_password, old_password=new_password)
 
@@ -424,7 +418,7 @@ class TestUser(IntegrationTestCase):
 			test_user.reload()
 			link = sendmail.call_args_list[0].kwargs["args"]["link"]
 			key = parse_qs(urlparse(link).query)["key"][0]
-			self.assertEqual(update_password(new_password, key=key), "me")
+			self.assertEqual(update_password(new_password, key=key), "/")
 			update_password(old_password, old_password=new_password)
 			self.assertEqual(
 				frappe.message_log[0].get("message"),
@@ -439,8 +433,8 @@ class TestUser(IntegrationTestCase):
 		self.assertEqual(reset_password(user="random"), "not found")
 
 	def test_user_onload_modules(self):
+		from frappe.config import get_modules_from_all_apps
 		from frappe.desk.form.load import getdoc
-		from frappe.utils.modules import get_modules_from_all_apps
 
 		frappe.response.docs = []
 		getdoc("User", "Administrator")
@@ -450,7 +444,7 @@ class TestUser(IntegrationTestCase):
 			sorted(m.get("module_name") for m in get_modules_from_all_apps()),
 		)
 
-	@IntegrationTestCase.change_settings("System Settings", reset_password_link_expiry_duration=1)
+	@change_settings("System Settings", reset_password_link_expiry_duration=1)
 	def test_reset_password_link_expiry(self):
 		new_password = "new_password"
 		frappe.set_user("testpassword@example.com")

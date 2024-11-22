@@ -15,7 +15,7 @@ from frappe.core.doctype.server_script.server_script_utils import get_server_scr
 from frappe.monitor import add_data_to_monitor
 from frappe.utils import cint
 from frappe.utils.csvutils import build_csv_response
-from frappe.utils.deprecations import deprecated
+from frappe.utils.deprecations import deprecated, deprecation_warning
 from frappe.utils.image import optimize_image
 from frappe.utils.response import build_response
 
@@ -102,7 +102,11 @@ def is_valid_http_method(method):
 	http_method = frappe.local.request.method
 
 	if http_method not in frappe.allowed_http_methods_for_whitelisted_func[method]:
-		frappe.throw_permission_error()
+		throw_permission_error()
+
+
+def throw_permission_error():
+	frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -173,7 +177,6 @@ def upload_file():
 				args["max_height"] = int(frappe.form_dict.max_height)
 			content = optimize_image(**args)
 
-	frappe.local.uploaded_file_url = file_url
 	frappe.local.uploaded_file = content
 	frappe.local.uploaded_filename = filename
 
@@ -241,12 +244,8 @@ def get_attr(cmd):
 	if "." in cmd:
 		method = frappe.get_attr(cmd)
 	else:
-		from frappe.deprecation_dumpster import deprecation_warning
-
 		deprecation_warning(
-			"unknown",
-			"v17",
-			f"Calling shorthand for {cmd} is deprecated, please specify full path in RPC call.",
+			f"Calling shorthand for {cmd} is deprecated, please specify full path in RPC call."
 		)
 		method = globals()[cmd]
 	return method
@@ -271,7 +270,7 @@ def run_doc_method(method, docs=None, dt=None, dn=None, arg=None, args=None):
 		doc.check_if_latest()
 
 	if not doc or not doc.has_permission("read"):
-		frappe.throw_permission_error()
+		throw_permission_error()
 
 	try:
 		args = frappe.parse_json(args)

@@ -33,7 +33,7 @@ class WebsiteSearch(FullTextSearch):
 		        self (object): FullTextSearch Instance
 		"""
 
-		if getattr(self, "_items_to_index", None) is not None:
+		if getattr(self, "_items_to_index", False):
 			return self._items_to_index
 
 		self._items_to_index = []

@@ -3,10 +3,10 @@
 
 
 from frappe.custom.report.audit_system_hooks.audit_system_hooks import execute
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 
-class TestAuditSystemHooksReport(IntegrationTestCase):
+class TestAuditSystemHooksReport(FrappeTestCase):
 	def test_basic_query(self):
 		_, data = execute()
 		for row in data:

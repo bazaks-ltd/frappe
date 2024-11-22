@@ -3,21 +3,12 @@
 import frappe
 from frappe.contacts.doctype.contact.contact import get_full_name
 from frappe.email import get_contact_list
-from frappe.tests import IntegrationTestCase, UnitTestCase
+from frappe.tests.utils import FrappeTestCase
 
-EXTRA_TEST_RECORD_DEPENDENCIES = ["Contact", "Salutation"]
-
-
-class UnitTestContact(UnitTestCase):
-	"""
-	Unit tests for Contact.
-	Use this class for testing individual functions and methods.
-	"""
-
-	pass
+test_dependencies = ["Contact", "Salutation"]
 
 
-class TestContact(IntegrationTestCase):
+class TestContact(FrappeTestCase):
 	def test_check_default_email(self):
 		emails = [
 			{"email": "test1@example.com", "is_primary": 0},
