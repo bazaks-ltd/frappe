@@ -97,7 +97,10 @@ frappe.datetime.prettyDate = prettyDate;
 frappe.datetime.refresh_when = function () {
 	if (jQuery) {
 		$(".frappe-timestamp").each(function () {
-			$(this).html(prettyDate($(this).attr("data-timestamp"), $(this).hasClass("mini")));
+			$(this).html(
+				prettyDate($(this).attr("data-timestamp"), $(this).hasClass("mini")) +
+					` <span class="font-weight-bold">(${$(this).attr("data-timestamp")})</span>`
+			);
 		});
 	}
 };
