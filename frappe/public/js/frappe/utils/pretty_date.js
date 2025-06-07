@@ -87,6 +87,7 @@ window.comment_when = function (datetime, mini) {
 		timestamp +
 		'">' +
 		prettyDate(datetime, mini) +
+		` <span class="font-weight-bold">(${datetime})</span>` +
 		"</span>"
 	);
 };

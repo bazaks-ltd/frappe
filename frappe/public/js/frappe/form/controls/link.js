@@ -172,9 +172,18 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 		frappe._from_link = frappe.utils.deep_clone(this);
 		frappe._from_link_scrollY = $(document).scrollTop();
 
-		frappe.ui.form.make_quick_entry(doctype, (doc) => {
-			return me.set_value(doc.name);
-		});
+		frappe.ui.form.make_quick_entry(
+			doctype,
+			(doc) => {
+				return me.set_value(doc.name);
+			},
+			(doc) => {
+				if (doc.fields_dict.item && me.doc.item_code) {
+					// doc.fields_dict.item.$input.val(me.doc.item_code);
+					doc.set_value("item", me.doc.item_code || "");
+				}
+			}
+		);
 
 		return false;
 	}
