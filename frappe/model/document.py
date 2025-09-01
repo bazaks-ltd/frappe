@@ -959,6 +959,9 @@ class Document(BaseDocument):
 			if parenttype and df.options != parenttype:
 				continue
 
+			if df.parent == 'Delivery Note' and df.fieldname == "no_items":
+				continue
+
 			if value := self.get(df.fieldname):
 				children.extend(value)
 
