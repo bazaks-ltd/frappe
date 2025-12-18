@@ -25,6 +25,7 @@
   "phone",
   "mobile_no",
   "company_name",
+  "department",
   "image",
   "sb_00",
   "google_contacts",
@@ -38,7 +39,6 @@
   "links",
   "is_primary_contact",
   "more_info",
-  "department",
   "unsubscribed"
  ],
  "fields": [

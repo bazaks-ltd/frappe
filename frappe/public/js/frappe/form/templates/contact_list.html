@@ -24,6 +24,10 @@
 				&nbsp;&#183;&nbsp;
 				<span class="text-muted"> {%= contact.designation %}</span>
 			{% } %}
+			{% if (contact.department){ %}
+				&nbsp;&#183;&nbsp;
+				<span class="text-muted"> {%= contact.department %}</span>
+			{% } %}
 		</p>
 		{% if (contact.phone || contact.mobile_no || contact.phone_nos.length > 0) { %}
 		<p>
